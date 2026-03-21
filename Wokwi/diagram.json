@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "author": "Kareem Adel 202200059",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": -4.76,
+      "attrs": { "env": "micropython-20231227-v1.22.0" }
+    },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -124.5, "left": 13.8, "attrs": {} },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir1",
+      "top": -7.88,
+      "left": 154.1,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr1",
+      "top": 22.4,
+      "left": -210.4,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v9.6", "h-48", "v28.8" ] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v9.6", "h67.2", "v28.8" ] ],
+    [ "dht1:SDA", "esp:4", "green", [ "v28.8", "h96.1", "v124.8" ] ],
+    [ "pir1:VCC", "esp:3V3", "red", [ "h-9.6", "v-38.4", "h-172.8", "v28.8" ] ],
+    [ "pir1:OUT", "esp:5", "green", [ "h-38.4", "v76.66" ] ],
+    [ "pir1:GND", "esp:GND.2", "black", [ "h-48", "v-9.86" ] ],
+    [ "ldr1:VCC", "esp:3V3", "red", [ "h28.8", "v-9.6" ] ],
+    [ "ldr1:GND", "esp:GND.1", "black", [ "h28.8", "v105.2" ] ],
+    [ "ldr1:AO", "esp:34", "green", [ "h0" ] ]
+  ],
+  "dependencies": {}
+}
