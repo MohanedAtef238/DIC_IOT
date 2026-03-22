@@ -5,6 +5,7 @@ import ntptime
 from machine import Pin, ADC
 import dht
 from umqtt.simple import MQTTClient
+from temperature_calculator import TemperatureCalculator
 
 # =========================
 # CONFIG
@@ -113,6 +114,9 @@ connect_wifi()
 sync_time()
 connect_mqtt()
 
+dht_sensor.measure()
+room = TemperatureCalculator(initial_temp=dht_sensor.temperature(), setpoint=22.0)
+
 last_publish = 0
 
 while True:
@@ -126,25 +130,29 @@ while True:
         raw_light = ldr.read()
         light_level = int((raw_light / 4095) * 1000)
 
-        if occupancy and light_level < 300:
-            light_level = 500
-
-        payload = {
-            "sensor_id": "b01-f01-r001",
-            "timestamp": get_timestamp(),
-            "readable_time": get_readable_time(),
-            "temperature": temp,
-            "humidity": hum,
-            "occupancy": occupancy,
-            "light_level": light_level,
-            "hvac_mode": "OFF",
-            "lighting_dimmer": int(light_level / 10)
-        }
-
-        if not validate_payload(payload):
-            continue
+        room.set_occupancy(occupancy)
+        room.set_light(light_level)
+        room.set_hvac("ON")
 
         if time.time() - last_publish >= 5:
+            new_temp = room.tick(outside_temp=28.0)
+            print("Simulated temp: {}C (sensor: {}C)".format(new_temp, temp))
+
+            payload = {
+                "sensor_id":     "b01-f01-r001",
+                "timestamp":     get_timestamp(),
+                "readable_time": get_readable_time(),
+                "temperature":   new_temp,
+                "humidity":      hum,
+                "occupancy":     room.is_occupied,
+                "light_level":   room.light_level,
+                "hvac_mode":     room.hvac_mode,
+                "lighting_dimmer": int(room.light_level / 10)
+            }
+
+            if not validate_payload(payload):
+                time.sleep(1)
+                continue
 
             publish(TOPIC_TELEMETRY, ujson.dumps(payload))
 
