@@ -3,7 +3,21 @@ import aiomqtt
 
 log = logging.getLogger("mqtt")
 
-CMD_TOPIC = "campus/bldg_01/+/+/actuator/hvac"
+
+def _topic_matches(topic_filter, topic):
+    filter_parts = topic_filter.split("/")
+    topic_parts = topic.split("/")
+
+    if len(filter_parts) != len(topic_parts):
+        return False
+
+    for expected, actual in zip(filter_parts, topic_parts):
+        if expected == "+":
+            continue
+        if expected != actual:
+            return False
+
+    return True
 
 
 class MQTTClient:
@@ -11,15 +25,16 @@ class MQTTClient:
         self.host = host
         self.port = port
         self.queue = asyncio.Queue()
-        self.rooms = {}
+        self.subscriptions = []
 
-    def register_rooms(self, rooms):
-        # index rooms by base topic so we can route actuator commands
-        for r in rooms:
-            self.rooms[r.base_topic] = r
+    def subscribe(self, topic_filter, handler):
+        self.subscriptions.append((topic_filter, handler))
 
     async def publish(self, topic, payload):
         await self.queue.put((topic, payload))
+
+    async def publish_json(self, topic, payload):
+        await self.publish(topic, json.dumps(payload))
 
     async def publish_loop(self, client):
         while True:
@@ -27,19 +42,16 @@ class MQTTClient:
             await client.publish(t, payload=p)
 
     async def subscribe_loop(self, client):
-        await client.subscribe(CMD_TOPIC)
-        async for msg in client.messages:
-            try:
-                data = json.loads(msg.payload)
-                mode = data["hvac_mode"].upper()
-            except Exception:
-                continue
+        for topic_filter, _ in self.subscriptions:
+            await client.subscribe(topic_filter)
 
-            # strip /actuator/hvac to get the room's base topic
-            key = str(msg.topic).replace("/actuator/hvac", "")
-            room = self.rooms.get(key)
-            if room and mode in ["ON", "OFF", "ECO"]:
-                room.hvac = mode
+        async for msg in client.messages:
+            topic = str(msg.topic)
+            payload = msg.payload.decode()
+
+            for topic_filter, handler in self.subscriptions:
+                if _topic_matches(topic_filter, topic):
+                    await handler(topic, payload)
 
     async def run(self):
         # reconnect loop - mosquitto might drop us sometimes during dev, due to memory limits, or some reported file parsing bug i found online. 

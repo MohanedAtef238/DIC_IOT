@@ -32,6 +32,8 @@ services:
       - .env
     networks:
       - iot_net
+    volumes:
+      - engine_data:/data
     depends_on:
       mosquitto:
         condition: service_healthy
@@ -39,6 +41,7 @@ services:
 volumes:
   mosquitto_data:
   mosquitto_log:
+  engine_data:
 networks:
   iot_net:
     driver: bridge

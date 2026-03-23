@@ -1,8 +1,8 @@
 import asyncio
-import json
 import logging
 import random, time
 from utils.temperature_calculator import calc_temp
+from network.topics import room_base_topic, room_payload_topic, room_sensor_topic
 
 log = logging.getLogger("room")
 
@@ -12,7 +12,7 @@ class Room:
         self.floor = floor
         self.room_num = room_num
         self.id = f"bldg_01-floor_{floor:02d}-room_{room_num:03d}"
-        self.base_topic = f"campus/bldg_01/floor_{floor:02d}/room_{room_num:03d}"
+        self.base_topic = room_base_topic(floor, room_num)
 
         # see .env
         self.alpha = env["alpha"]
@@ -23,7 +23,7 @@ class Room:
         # sensor readings, the defaults at least.
         self.temp = 22.0
         self.humidity = 50.0
-        self.target = 22.0
+        self.target = env["default_target"]
         self.hvac = "OFF"
         self.occ = False
         self.lux = 200
@@ -49,12 +49,23 @@ class Room:
             "ts": int(time.time()),
             "temperature": self.temp,
             "humidity": self.humidity,
+            "target_temp": self.target,
             "occupancy": self.occ,
             "ambient_light": self.lux,
             "hvac_status": self.hvac,
         }
 
-    async def run_loop(self, mqtt):
+    def sensor_messages(self):
+        ts = int(time.time())
+        return [
+            (room_payload_topic(self.base_topic), self.payload()),
+            (room_sensor_topic(self.base_topic, "temperature"), {"value": self.temp, "ts": ts}),
+            (room_sensor_topic(self.base_topic, "humidity"), {"value": self.humidity, "ts": ts}),
+            (room_sensor_topic(self.base_topic, "occupancy"), {"value": self.occ, "ts": ts}),
+            (room_sensor_topic(self.base_topic, "light"), {"ambient": self.lux, "ts": ts}),
+        ]
+
+    async def run_loop(self, publish_json):
         #random stagger so we dont hammer the broker with 200 publishes at t=0
         await asyncio.sleep(random.uniform(0, self.interval))
 
@@ -62,11 +73,7 @@ class Room:
             t0 = time.perf_counter()
             self.tick()
 
-            ts = int(time.time())
-            base = self.base_topic + "/sensor"
-            await mqtt.publish(f"{base}/temperature", json.dumps({"value": self.temp, "ts": ts}))
-            await mqtt.publish(f"{base}/humidity",    json.dumps({"value": self.humidity, "ts": ts}))
-            await mqtt.publish(f"{base}/occupancy",   json.dumps({"value": self.occ, "ts": ts}))
-            await mqtt.publish(f"{base}/light",        json.dumps({"ambient": self.lux, "ts": ts}))
+            for topic, payload in self.sensor_messages():
+                await publish_json(topic, payload)
 
             await asyncio.sleep(max(0, self.interval - (time.perf_counter() - t0)))
