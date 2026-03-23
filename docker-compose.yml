@@ -1,0 +1,44 @@
+# Campus IoT — Docker Compose
+# Spins up:
+#   1. Eclipse Mosquitto (MQTT broker)
+#   2. campus_engine     (Python simulation engine)
+# Both services share the 'iot_net' bridge network.
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    ports:
+      - "1883:1883"     # TCP
+      - "9001:9001"     # WebSocket
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks:
+      - iot_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "healthcheck", "-m", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  engine:
+    build:
+      context: ./engine_app
+      dockerfile: Dockerfile
+    container_name: campus_engine
+    env_file:
+      - .env
+    networks:
+      - iot_net
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+networks:
+  iot_net:
+    driver: bridge
