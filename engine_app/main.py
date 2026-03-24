@@ -87,6 +87,7 @@ async def run_engine():
                     "humidity": state["last_humidity"],
                     "hvac_status": state["hvac_mode"],
                     "target_temp": state["target_temp"],
+                    "lighting_dimmer": state["lighting_dimmer"],
                     "ts": state["last_update"],
                 }
             )
@@ -100,6 +101,11 @@ async def run_engine():
             state_flush_event.clear()
             persist_all_states()
             log.info("persisted %d room states to sqlite", len(rooms))
+
+    if not saved_states:
+        persist_all_states()
+        log.info("sqlite was empty; initialized %d rooms with default values", len(rooms))
+
     async def handle_heartbeat(topic, payload):
         nonlocal slowest_room_heartbeat
 
