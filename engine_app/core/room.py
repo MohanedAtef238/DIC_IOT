@@ -14,7 +14,7 @@ class Room:
 
         self.floor = floor
         self.room_num = room_num
-        self.id = f"bldg_01-floor_{floor:02d}-room_{room_num:03d}"
+        self.id = f"b01-f{floor:02d}-r{room_num:03d}"
         self.base_topic = room_base_topic(floor, room_num)
 
         # see .env
@@ -115,14 +115,22 @@ class Room:
 
     def payload(self):
         return {
-            "room_id": self.id,
-            "ts": int(time.time()),
-            "temperature": self.temp,
-            "humidity": self.humidity,
-            "target_temp": self.target,
-            "occupancy": self.occ,
-            "ambient_light": self.lux,
-            "hvac_status": self.hvac,
+            "metadata": {
+                "sensor_id": self.id,
+                "building": "b01",
+                "floor": self.floor,
+                "room": self.room_num,
+                "timestamp": int(time.time()),
+            },
+            "sensors": {
+                "temperature": self.temp,
+                "humidity": self.humidity,
+                "occupancy": self.occ,
+                "light_level": self.lux,
+            },
+            "actuators": {
+                "hvac_mode": self.hvac.lower(),
+            },
         }
 
     def sensor_messages(self):

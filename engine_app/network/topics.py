@@ -1,5 +1,5 @@
 def room_base_topic(floor, room_num):
-    return f"campus/bldg_01/floor_{floor:02d}/room_{room_num:03d}"
+    return f"campus/b01/floor_{floor:02d}/room_{room_num:03d}"
 
 
 def room_payload_topic(base_topic):
@@ -19,15 +19,16 @@ def room_hvac_applied_ack_topic(base_topic):
 
 
 def all_room_hvac_applied_ack_topics():
-    return "campus/bldg_01/+/+/ack/hvac_applied"
+    return "campus/b01/+/+/ack/hvac_applied"
 
 
 def all_room_payload_topics():
-    return "campus/bldg_01/+/+/payload"
+    return "campus/b01/+/+/payload"
 
 
 def fleet_hvac_command_topic():
+    return "campus/b01/actuator/hvac"
     return "campus/bldg_01/actuator/hvac"
 
 def room_heartbeat():
-    return "campus/bldg_01/health"
+    return "campus/b_01/health"
