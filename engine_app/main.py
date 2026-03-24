@@ -44,7 +44,7 @@ async def run_engine():
     rooms = []
     for fl in range(1, nfloors + 1):
         for rm in range(1, nrooms + 1):
-            room_id = f"bldg_01-floor_{fl:02d}-room_{rm:03d}"
+            room_id = f"b01-floor_{fl:02d}-room_{rm:03d}"
             rooms.append(Room(fl, rm, env, state=saved_states.get(room_id)))
 
     engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
