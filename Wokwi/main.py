@@ -2,6 +2,7 @@ import network
 import time
 import ujson
 import ntptime
+import ussl
 from machine import Pin, ADC
 import dht
 from umqtt.simple import MQTTClient
@@ -12,11 +13,16 @@ from umqtt.simple import MQTTClient
 SSID = "Wokwi-GUEST"
 PASSWORD = ""
 
-MQTT_BROKER = "broker.hivemq.com"
-CLIENT_ID = "202200059"
+MQTT_BROKER = "9ee5ca1bdb284fceaf7e3efd2799e852.s1.eu.hivemq.cloud"
+MQTT_PORT = 8883
 
-TOPIC_TELEMETRY = b"campus/kareem/bldg_01/floor_01/room_001/telemetry"
-TOPIC_HEARTBEAT = b"campus/kareem/heartbeat/room_001"
+CLIENT_ID = "202200059-device"
+
+MQTT_USER = "Kareem"
+MQTT_PASS = "Kareem123456"
+
+TOPIC_TELEMETRY = b"campus/bldg_01/floor_01/room_001/telemetry"
+TOPIC_HEARTBEAT = b"campus/heartbeat/room_001"
 
 UTC_OFFSET = 2 * 3600  
 
@@ -65,7 +71,7 @@ def get_readable_time():
     return "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])
 
 # =========================
-# MQTT (AUTO RECONNECT)
+# MQTT (SSL + RECONNECT)
 # =========================
 client = None
 
@@ -73,13 +79,21 @@ def connect_mqtt():
     global client
     while True:
         try:
-            client = MQTTClient(CLIENT_ID, MQTT_BROKER)
+            client = MQTTClient(
+                CLIENT_ID,
+                MQTT_BROKER,
+                port=MQTT_PORT,
+                user=MQTT_USER,
+                password=MQTT_PASS,
+                ssl=True,
+                ssl_params={"server_hostname": MQTT_BROKER}
+            )
             client.connect()
-            print("MQTT Connected!")
+            print("MQTT Connected (Cloud)!")
             return
         except Exception as e:
             print("MQTT connect failed:", e)
-            time.sleep(2)
+            time.sleep(3)
 
 def publish(topic, msg):
     global client
@@ -117,6 +131,7 @@ last_publish = 0
 
 while True:
     try:
+        # Read sensors
         dht_sensor.measure()
         temp = dht_sensor.temperature()
         hum = dht_sensor.humidity()
