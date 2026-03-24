@@ -6,22 +6,16 @@ import time
 import psutil  # For CPU and memory usage
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
-from network.topics import (
-    fleet_hvac_command_topic,
-    room_base_topic,
-    room_hvac_applied_ack_topic,
-    room_hvac_command_topic,
-    room_payload_topic,
-    room_sensor_topic,
-)
-
+from network.topics import *
 log = logging.getLogger("room")
 
 class Room:
     def __init__(self, floor, room_num, env, state=None):
+        self.last_heartbeat = int(time.time())
+
         self.floor = floor
         self.room_num = room_num
-        self.id = f"bldg_01-floor_{floor:02d}-room_{room_num:03d}"
+        self.id = f"b01-f{floor:02d}-r{room_num:03d}"
         self.base_topic = room_base_topic(floor, room_num)
 
         # see .env
@@ -52,8 +46,13 @@ class Room:
             self.hvac = str(state['hvac_mode']).upper()
 
         self.occ = False
-        self.lux = 200
+        self.dimmer = 75  # lighting dimmer %, 0-100
+        self.lux = round(self.dimmer / 100 * 1000)
         self.light_threshold = 300
+
+        if state and 'lighting_dimmer' in state:
+            self.dimmer = state['lighting_dimmer']
+            self.lux = round(self.dimmer / 100 * 1000)
         self.state = state if state is not None else {}
         self._sync_state()
         self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
@@ -75,10 +74,23 @@ class Room:
         self.state["last_humidity"] = self.humidity
         self.state["target_temp"] = self.target
         self.state["hvac_mode"] = self.hvac
+        self.state["lighting_dimmer"] = self.dimmer
         self.state["last_update"] = int(time.time())
 
     def refresh_state(self):
         self._sync_state()
+    
+    async def publish_heartbeat(self):
+        self.last_heartbeat = int(time.time())
+        self._sync_state()
+        await self.broker.publish_json(
+            room_heartbeat(),
+            {
+                "room_id": self.id,
+                "ts": self.last_heartbeat,
+            }
+        )
+
 
     def register_hvac_subscription(self):
         async def handle_hvac_command(topic, payload):
@@ -157,21 +169,29 @@ class Room:
 
         if self.occ:
             self.lux = max(self.lux, self.light_threshold)
-        else:
-            self.lux = 0
 
         self._sync_state()
 
+
     def payload(self):
         return {
-            "room_id": self.id,
-            "ts": int(time.time()),
-            "temperature": self.temp,
-            "humidity": self.humidity,
-            "target_temp": self.target,
-            "occupancy": self.occ,
-            "ambient_light": self.lux,
-            "hvac_status": self.hvac,
+            "metadata": {
+                "sensor_id": self.id,
+                "building": "b01",
+                "floor": self.floor,
+                "room": self.room_num,
+                "timestamp": int(time.time()),
+            },
+            "sensors": {
+                "temperature": self.temp,
+                "humidity": self.humidity,
+                "occupancy": self.occ,
+                "light_level": self.lux,
+            },
+            "actuators": {
+                "hvac_mode": self.hvac.lower(),
+                "lighting_dimmer": self.dimmer,
+            },
         }
 
     def sensor_messages(self):
@@ -221,6 +241,10 @@ class Room:
 
             for topic, payload in self.sensor_messages():
                 await self.broker.publish_json(topic, payload)
+                
+            await self.publish_heartbeat()
+            if self.room_num==7 and self.floor==3:
+                await asyncio.sleep(40)
 
             # Calculate event loop latency
             loop_latency = time.perf_counter() - tick_start

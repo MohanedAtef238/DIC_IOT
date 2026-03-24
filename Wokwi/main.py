@@ -2,10 +2,10 @@ import network
 import time
 import ujson
 import ntptime
+import ussl
 from machine import Pin, ADC
 import dht
 from umqtt.simple import MQTTClient
-from temperature_calculator import TemperatureCalculator
 
 # =========================
 # CONFIG
@@ -13,11 +13,16 @@ from temperature_calculator import TemperatureCalculator
 SSID = "Wokwi-GUEST"
 PASSWORD = ""
 
-MQTT_BROKER = "broker.hivemq.com"
-CLIENT_ID = "202200059"
+MQTT_BROKER = "9ee5ca1bdb284fceaf7e3efd2799e852.s1.eu.hivemq.cloud"
+MQTT_PORT = 8883
 
-TOPIC_TELEMETRY = b"campus/kareem/bldg_01/floor_01/room_001/telemetry"
-TOPIC_HEARTBEAT = b"campus/kareem/heartbeat/room_001"
+CLIENT_ID = "202200059-device"
+
+MQTT_USER = "Kareem"
+MQTT_PASS = "Kareem123456"
+
+TOPIC_TELEMETRY = b"campus/bldg_01/floor_01/room_001/telemetry"
+TOPIC_HEARTBEAT = b"campus/heartbeat/room_001"
 
 UTC_OFFSET = 2 * 3600  
 
@@ -66,7 +71,7 @@ def get_readable_time():
     return "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])
 
 # =========================
-# MQTT (AUTO RECONNECT)
+# MQTT (SSL + RECONNECT)
 # =========================
 client = None
 
@@ -74,13 +79,21 @@ def connect_mqtt():
     global client
     while True:
         try:
-            client = MQTTClient(CLIENT_ID, MQTT_BROKER)
+            client = MQTTClient(
+                CLIENT_ID,
+                MQTT_BROKER,
+                port=MQTT_PORT,
+                user=MQTT_USER,
+                password=MQTT_PASS,
+                ssl=True,
+                ssl_params={"server_hostname": MQTT_BROKER}
+            )
             client.connect()
-            print("MQTT Connected!")
+            print("MQTT Connected (Cloud)!")
             return
         except Exception as e:
             print("MQTT connect failed:", e)
-            time.sleep(2)
+            time.sleep(3)
 
 def publish(topic, msg):
     global client
@@ -114,13 +127,11 @@ connect_wifi()
 sync_time()
 connect_mqtt()
 
-dht_sensor.measure()
-room = TemperatureCalculator(initial_temp=dht_sensor.temperature(), setpoint=22.0)
-
 last_publish = 0
 
 while True:
     try:
+        # Read sensors
         dht_sensor.measure()
         temp = dht_sensor.temperature()
         hum = dht_sensor.humidity()
@@ -130,29 +141,25 @@ while True:
         raw_light = ldr.read()
         light_level = int((raw_light / 4095) * 1000)
 
-        room.set_occupancy(occupancy)
-        room.set_light(light_level)
-        room.set_hvac("ON")
+        if occupancy and light_level < 300:
+            light_level = 500
+
+        payload = {
+            "sensor_id": "b01-f01-r001",
+            "timestamp": get_timestamp(),
+            "readable_time": get_readable_time(),
+            "temperature": temp,
+            "humidity": hum,
+            "occupancy": occupancy,
+            "light_level": light_level,
+            "hvac_mode": "OFF",
+            "lighting_dimmer": int(light_level / 10)
+        }
+
+        if not validate_payload(payload):
+            continue
 
         if time.time() - last_publish >= 5:
-            new_temp = room.tick(outside_temp=28.0)
-            print("Simulated temp: {}C (sensor: {}C)".format(new_temp, temp))
-
-            payload = {
-                "sensor_id":     "b01-f01-r001",
-                "timestamp":     get_timestamp(),
-                "readable_time": get_readable_time(),
-                "temperature":   new_temp,
-                "humidity":      hum,
-                "occupancy":     room.is_occupied,
-                "light_level":   room.light_level,
-                "hvac_mode":     room.hvac_mode,
-                "lighting_dimmer": int(room.light_level / 10)
-            }
-
-            if not validate_payload(payload):
-                time.sleep(1)
-                continue
 
             publish(TOPIC_TELEMETRY, ujson.dumps(payload))
 

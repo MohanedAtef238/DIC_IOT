@@ -7,6 +7,7 @@ EXPECTED_COLUMNS = [
     "last_humidity",
     "hvac_mode",
     "target_temp",
+    "lighting_dimmer",
     "last_update",
 ]
 
@@ -36,6 +37,7 @@ class SQLiteRoomStore:
                 last_humidity REAL NOT NULL,
                 hvac_mode TEXT NOT NULL,
                 target_temp REAL NOT NULL,
+                lighting_dimmer INTEGER NOT NULL,
                 last_update INTEGER NOT NULL
             )
             """
@@ -51,7 +53,7 @@ class SQLiteRoomStore:
     def load_room_states(self):
         rows = self._fetchall(
             """
-            SELECT room_id, last_temp, last_humidity, hvac_mode, target_temp, last_update
+            SELECT room_id, last_temp, last_humidity, hvac_mode, target_temp, lighting_dimmer, last_update
             FROM room_payloads
             """
         )
@@ -61,7 +63,8 @@ class SQLiteRoomStore:
                 "last_humidity": row[2],
                 "hvac_mode": row[3],
                 "target_temp": row[4],
-                "last_update": row[5],
+                "lighting_dimmer": row[5],
+                "last_update": row[6],
             }
             for row in rows
         }
@@ -70,13 +73,14 @@ class SQLiteRoomStore:
         self._execute(
             """
             INSERT INTO room_payloads (
-                room_id, last_temp, last_humidity, hvac_mode, target_temp, last_update
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                room_id, last_temp, last_humidity, hvac_mode, target_temp, lighting_dimmer, last_update
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(room_id) DO UPDATE SET
                 last_temp = excluded.last_temp,
                 last_humidity = excluded.last_humidity,
                 hvac_mode = excluded.hvac_mode,
                 target_temp = excluded.target_temp,
+                lighting_dimmer = excluded.lighting_dimmer,
                 last_update = excluded.last_update
             """,
             (
@@ -85,6 +89,7 @@ class SQLiteRoomStore:
                 payload["humidity"],
                 payload["hvac_status"],
                 payload["target_temp"],
+                payload["lighting_dimmer"],
                 payload["ts"],
             ),
         )
