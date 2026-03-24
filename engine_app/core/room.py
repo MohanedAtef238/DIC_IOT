@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import time
+import psutil  # For CPU and memory usage
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
 from network.topics import (
@@ -29,6 +30,14 @@ class Room:
         self.outside = env["outside_temp"]
         self.interval = env["publish_interval"]
         self.fault_probability = env.get("fault_probability", 0.01)  # 1% chance of fault per tick
+
+        # Performance metrics
+        self.performance_metrics = {
+            "tick_duration": [],
+            "event_loop_latency": [],
+            "cpu_usage": [],
+            "memory_usage": [],
+        }
 
         # sensor readings, the defaults at least.
         self.temp = 22.0
@@ -180,8 +189,29 @@ class Room:
         await asyncio.sleep(random.uniform(0, self.interval))
 
         while True:
-            t0 = time.perf_counter()
+            tick_start = time.perf_counter()
             self.tick()
+            tick_end = time.perf_counter()
+            tick_duration = tick_end - tick_start
+            self.performance_metrics["tick_duration"].append(tick_duration)
+
+            # Measure CPU and memory usage
+            cpu_usage = psutil.cpu_percent(interval=None)
+            memory_usage = psutil.virtual_memory().percent
+            self.performance_metrics["cpu_usage"].append(cpu_usage)
+            self.performance_metrics["memory_usage"].append(memory_usage)
+
+            # Log performance metrics every 10 ticks
+            if len(self.performance_metrics["tick_duration"]) % 10 == 0:
+                avg_tick_duration = sum(self.performance_metrics["tick_duration"][-10:]) / 10
+                avg_cpu_usage = sum(self.performance_metrics["cpu_usage"][-10:]) / 10
+                avg_memory_usage = sum(self.performance_metrics["memory_usage"][-10:]) / 10
+                log.info(
+                    f"Performance metrics for {self.id}: "
+                    f"Avg tick duration: {avg_tick_duration:.4f}s, "
+                    f"Avg CPU usage: {avg_cpu_usage:.2f}%, "
+                    f"Avg memory usage: {avg_memory_usage:.2f}%"
+                )
 
             if self.fault_active and self.fault_type == "telemetry_delay":
                 await asyncio.sleep(random.uniform(1, 5))  # Delay telemetry
@@ -192,4 +222,8 @@ class Room:
             for topic, payload in self.sensor_messages():
                 await self.broker.publish_json(topic, payload)
 
-            await asyncio.sleep(max(0, self.interval - (time.perf_counter() - t0)))
+            # Calculate event loop latency
+            loop_latency = time.perf_counter() - tick_start
+            self.performance_metrics["event_loop_latency"].append(loop_latency)
+
+            await asyncio.sleep(max(0, self.interval - loop_latency))
