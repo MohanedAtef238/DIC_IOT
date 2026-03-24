@@ -36,8 +36,13 @@ class Room:
             self.hvac = str(state['hvac_mode']).upper()
 
         self.occ = False
-        self.lux = 200
+        self.dimmer = 75  # lighting dimmer %, 0-100
+        self.lux = round(self.dimmer / 100 * 1000)
         self.light_threshold = 300
+
+        if state and 'lighting_dimmer' in state:
+            self.dimmer = state['lighting_dimmer']
+            self.lux = round(self.dimmer / 100 * 1000)
         self.state = state if state is not None else {}
         self._sync_state()
         self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
@@ -49,6 +54,7 @@ class Room:
         self.state["last_humidity"] = self.humidity
         self.state["target_temp"] = self.target
         self.state["hvac_mode"] = self.hvac
+        self.state["lighting_dimmer"] = self.dimmer
         self.state["last_update"] = int(time.time())
 
     def refresh_state(self):
@@ -104,11 +110,11 @@ class Room:
         self.humidity += 0.05 if self.occ else -0.02
         self.humidity = round(max(20, min(90, self.humidity)), 2) 
 
-        # if someone's in the room, lights must be above threshold, and this way if there is already light from reading from sensor, we wouldnt have to change it. things like an open window and what not. 
+        # lux is driven by the dimmer setting
+        self.lux = round(self.dimmer / 100 * 1000)
+        # if someone's in the room, lights must be above threshold
         if self.occ:
             self.lux = max(self.lux, self.light_threshold)
-        else:
-            self.lux = 0
 
         self._sync_state()
 
@@ -130,6 +136,7 @@ class Room:
             },
             "actuators": {
                 "hvac_mode": self.hvac.lower(),
+                "lighting_dimmer": self.dimmer,
             },
         }
 
