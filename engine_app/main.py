@@ -2,12 +2,14 @@ import asyncio
 import json
 import logging
 import os, sys
+import time
 from dotenv import load_dotenv
 
 from core.room import Room
 from network.mqtt_client import MQTTClient
-from network.topics import all_room_hvac_applied_ack_topics
+from network.topics import *
 from storage.sqlite_store import SQLiteRoomStore
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
 log = logging.getLogger("engine")
@@ -22,10 +24,11 @@ def get_env():
     conf["beta"]      = float(os.environ["BETA"])
     conf["outside_temp"]  = float(os.environ["OUTSIDE_TEMP"])
     conf["default_target"] = float(os.environ["DEFAULT_TARGET_TEMP"])
-    conf["publish_interval"] = float(os.environ["PUBLISH_INTERVAL"])
+    conf["health_interval"] = int(os.environ.get("HEALTH_INTERVAL",30))
     conf["mqtt_host"] = os.environ["MQTT_HOST"]
     conf["mqtt_port"] = int(os.environ["MQTT_PORT"])
     conf["sqlite_db_path"] = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
+    conf["publish_interval"] = int(os.environ.get("PUBLISH_INTERVAL",5))
     return conf
 
 
@@ -51,6 +54,10 @@ async def run_engine():
     state_flush_event = asyncio.Event()
     pending_fleet_acks = {}
     expected_rooms = len(rooms)
+
+    room_index_by_id = {room.id: index for index, room in enumerate(rooms)}
+    last_heartbeat = [int(time.time())] * expected_rooms
+    slowest_room_heartbeat = rooms[0].id
 
     async def handle_hvac_applied_ack(topic, payload):
         try:
@@ -93,12 +100,60 @@ async def run_engine():
             state_flush_event.clear()
             persist_all_states()
             log.info("persisted %d room states to sqlite", len(rooms))
+    async def handle_heartbeat(topic, payload):
+        nonlocal slowest_room_heartbeat
+
+        try:
+            data = json.loads(payload)
+            room_id = data["room_id"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            log.warning("invalid heartbeat from %s: %s", topic, payload)
+            return
+
+        room_index = room_index_by_id.get(room_id)
+        if room_index is None:
+            log.warning("heartbeat received for unknown room_id: %s", room_id)
+            return
+
+        last_heartbeat[room_index] = int(time.time())
+
+        if room_id == slowest_room_heartbeat:
+            slowest_index = last_heartbeat.index(min(last_heartbeat))
+            slowest_room_heartbeat = rooms[slowest_index].id
+
+    async def check_health():
+        heartbeat_timeout = env["health_interval"]
+
+        while True:
+            slowest_index = room_index_by_id[slowest_room_heartbeat]
+            seconds_since_last_heartbeat = int(time.time()) - last_heartbeat[slowest_index]
+
+            if seconds_since_last_heartbeat >= heartbeat_timeout:
+                log.warning(
+                    "room %s missed heartbeat for %ds (timeout=%ds)",
+                    slowest_room_heartbeat,
+                    seconds_since_last_heartbeat,
+                    heartbeat_timeout,
+                )
+                await asyncio.sleep(5)
+            else:
+                log.info(
+                    "health check ok; slowest room %s last heartbeat %ds ago",
+                    slowest_room_heartbeat,
+                    seconds_since_last_heartbeat,
+                )
+            await asyncio.sleep(max(0, env["health_interval"] - seconds_since_last_heartbeat))
 
 
 
     # one persistence task + two tasks per room (room broker + room publish loop)
     engine_broker.subscribe(all_room_hvac_applied_ack_topics(), handle_hvac_applied_ack)
-    tasks = [asyncio.create_task(engine_broker.run()), asyncio.create_task(persist_states_loop())]
+    engine_broker.subscribe(room_heartbeat(), handle_heartbeat)
+    tasks = [
+        asyncio.create_task(engine_broker.run()),
+        asyncio.create_task(persist_states_loop()),
+        asyncio.create_task(check_health()),
+    ]
     for r in rooms:
         tasks.append(asyncio.create_task(r.broker.run()))
         tasks.append(asyncio.create_task(r.run_loop()))

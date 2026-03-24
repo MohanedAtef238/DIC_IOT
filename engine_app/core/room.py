@@ -4,20 +4,14 @@ import logging
 import random, time
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
-from network.topics import (
-    fleet_hvac_command_topic,
-    room_base_topic,
-    room_hvac_applied_ack_topic,
-    room_hvac_command_topic,
-    room_payload_topic,
-    room_sensor_topic,
-)
-
+from network.topics import *
 log = logging.getLogger("room")
 
 
 class Room:
     def __init__(self, floor, room_num, env, state=None):
+        self.last_heartbeat = int(time.time())
+
         self.floor = floor
         self.room_num = room_num
         self.id = f"b01-f{floor:02d}-r{room_num:03d}"
@@ -59,6 +53,18 @@ class Room:
 
     def refresh_state(self):
         self._sync_state()
+    
+    async def publish_heartbeat(self):
+        self.last_heartbeat = int(time.time())
+        self._sync_state()
+        await self.broker.publish_json(
+            room_heartbeat(),
+            {
+                "room_id": self.id,
+                "ts": self.last_heartbeat,
+            }
+        )
+
 
     def register_hvac_subscription(self):
         async def handle_hvac_command(topic, payload):
@@ -106,6 +112,7 @@ class Room:
 
         self._sync_state()
 
+
     def payload(self):
         return {
             "metadata": {
@@ -146,5 +153,9 @@ class Room:
 
             for topic, payload in self.sensor_messages():
                 await self.broker.publish_json(topic, payload)
+                
+            await self.publish_heartbeat()
+            if self.room_num==7 and self.floor==3:
+                await asyncio.sleep(40)
 
             await asyncio.sleep(max(0, self.interval - (time.perf_counter() - t0)))
