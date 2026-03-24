@@ -20,7 +20,7 @@ class Room:
     def __init__(self, floor, room_num, env, state=None):
         self.floor = floor
         self.room_num = room_num
-        self.id = f"b01-floor_{floor:02d}-room_{room_num:03d}"
+        self.id = f"b01-f{floor:02d}-r{room_num:03d}"
         self.base_topic = room_base_topic(floor, room_num)
 
         # see .env
