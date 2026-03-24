@@ -2,8 +2,7 @@ import network
 import time
 import ujson
 import ntptime
-import ussl
-from machine import Pin, ADC
+from machine import Pin, ADC, PWM
 import dht
 from umqtt.simple import MQTTClient
 
@@ -21,8 +20,11 @@ CLIENT_ID = "202200059-device"
 MQTT_USER = "Kareem"
 MQTT_PASS = "Kareem123456"
 
-TOPIC_TELEMETRY = b"campus/bldg_01/floor_01/room_001/telemetry"
-TOPIC_HEARTBEAT = b"campus/heartbeat/room_001"
+TOPIC_TELEMETRY = b"campus/b01/floor1/room001/telemetry"
+TOPIC_HEARTBEAT = b"campus/heartbeat/room001"
+
+TOPIC_HVAC = b"campus/b01/floor1/room001/hvac"
+TOPIC_DIMMER = b"campus/b01/floor1/room001/dimmer"
 
 UTC_OFFSET = 2 * 3600  
 
@@ -36,6 +38,14 @@ ldr = ADC(Pin(34))
 ldr.atten(ADC.ATTN_11DB)
 
 # =========================
+# ACTUATORS
+# =========================
+led = PWM(Pin(18), freq=1000)
+
+hvac_mode = "eco"
+lighting_dimmer = 50
+
+# =========================
 # WIFI
 # =========================
 def connect_wifi():
@@ -43,82 +53,100 @@ def connect_wifi():
     wifi.active(True)
     wifi.connect(SSID, PASSWORD)
 
-    print("Connecting WiFi...")
     while not wifi.isconnected():
         time.sleep(0.5)
 
     print("WiFi Connected!")
 
 # =========================
-# TIME (RETRY SAFE)
+# TIME
 # =========================
 def sync_time():
-    for _ in range(5):
-        try:
-            ntptime.settime()
-            print("NTP Synced!")
-            return
-        except:
-            print("Retrying NTP...")
-            time.sleep(1)
-    print("NTP FAILED")
+    try:
+        ntptime.settime()
+        print("Time synced!")
+    except:
+        print("NTP failed")
 
 def get_timestamp():
     return int(time.time() + UTC_OFFSET)
 
-def get_readable_time():
-    t = time.localtime(time.time() + UTC_OFFSET)
-    return "{:02d}:{:02d}:{:02d}".format(t[3], t[4], t[5])
+# =========================
+# MQTT CALLBACK
+# =========================
+def mqtt_callback(topic, msg):
+    global hvac_mode, lighting_dimmer
+
+    try:
+        msg = msg.decode()
+
+        # Try parsing JSON
+        try:
+            data = ujson.loads(msg)
+        except:
+            data = msg  # fallback if plain string
+
+        if topic == TOPIC_HVAC:
+            if isinstance(data, dict):
+                hvac_mode = data.get("hvac_mode", "eco").upper()
+            else:
+                hvac_mode = data.upper()
+
+            # enforce allowed modes
+            if hvac_mode not in ["ON", "OFF", "ECO"]:
+                hvac_mode = "ECO"
+
+            print("HVAC set to:", hvac_mode)
+
+        elif topic == TOPIC_DIMMER:
+            if isinstance(data, dict):
+                lighting_dimmer = int(data.get("lighting_dimmer", 50))
+            else:
+                lighting_dimmer = int(data)
+
+            lighting_dimmer = max(0, min(100, lighting_dimmer))
+
+            duty = int((lighting_dimmer / 100) * 1023)
+            led.duty(duty)
+
+            print("Dimmer set to:", lighting_dimmer)
+
+    except Exception as e:
+        print("MQTT error:", e)
 
 # =========================
-# MQTT (SSL + RECONNECT)
+# MQTT
 # =========================
 client = None
 
 def connect_mqtt():
     global client
-    while True:
-        try:
-            client = MQTTClient(
-                CLIENT_ID,
-                MQTT_BROKER,
-                port=MQTT_PORT,
-                user=MQTT_USER,
-                password=MQTT_PASS,
-                ssl=True,
-                ssl_params={"server_hostname": MQTT_BROKER}
-            )
-            client.connect()
-            print("MQTT Connected (Cloud)!")
-            return
-        except Exception as e:
-            print("MQTT connect failed:", e)
-            time.sleep(3)
+
+    client = MQTTClient(
+        CLIENT_ID,
+        MQTT_BROKER,
+        port=MQTT_PORT,
+        user=MQTT_USER,
+        password=MQTT_PASS,
+        ssl=True,
+        ssl_params={"server_hostname": MQTT_BROKER}
+    )
+
+    client.set_callback(mqtt_callback)
+    client.connect()
+
+    # Subscribe to control topics
+    client.subscribe(TOPIC_HVAC)
+    client.subscribe(TOPIC_DIMMER)
+
+    print("MQTT Connected & Subscribed!")
 
 def publish(topic, msg):
-    global client
     try:
         client.publish(topic, msg)
     except:
-        print("MQTT lost... reconnecting")
+        print("Reconnect MQTT...")
         connect_mqtt()
-        client.publish(topic, msg)
-
-# =========================
-# JSON VALIDATION
-# =========================
-def validate_payload(payload):
-    try:
-        assert isinstance(payload["sensor_id"], str)
-        assert 15 <= payload["temperature"] <= 50
-        assert 0 <= payload["humidity"] <= 100
-        assert isinstance(payload["occupancy"], bool)
-        assert 0 <= payload["light_level"] <= 1000
-        assert payload["hvac_mode"] in ["ON", "OFF", "ECO"]
-        return True
-    except Exception as e:
-        print("Invalid payload:", e)
-        return False
 
 # =========================
 # MAIN
@@ -131,6 +159,8 @@ last_publish = 0
 
 while True:
     try:
+        client.check_msg()  # check incoming MQTT messages
+
         # Read sensors
         dht_sensor.measure()
         temp = dht_sensor.temperature()
@@ -141,23 +171,26 @@ while True:
         raw_light = ldr.read()
         light_level = int((raw_light / 4095) * 1000)
 
-        if occupancy and light_level < 300:
-            light_level = 500
-
+     
         payload = {
-            "sensor_id": "b01-f01-r001",
-            "timestamp": get_timestamp(),
-            "readable_time": get_readable_time(),
-            "temperature": temp,
-            "humidity": hum,
-            "occupancy": occupancy,
-            "light_level": light_level,
-            "hvac_mode": "OFF",
-            "lighting_dimmer": int(light_level / 10)
+            "metadata": {
+                "sensor_id": "b01-f01-r001",
+                "building": "b01",
+                "floor": 1,
+                "room": 1,
+                "timestamp": get_timestamp()
+            },
+            "sensors": {
+                "temperature": temp,
+                "humidity": hum,
+                "occupancy": occupancy,
+                "light_level": light_level
+            },
+            "actuators": {
+                "hvac_mode": hvac_mode,
+                "lighting_dimmer": lighting_dimmer
+            }
         }
-
-        if not validate_payload(payload):
-            continue
 
         if time.time() - last_publish >= 5:
 
