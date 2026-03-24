@@ -1,4 +1,4 @@
-# Campus IoT — Docker Compose
+﻿# Campus IoT - Docker Compose
 # Spins up:
 #   1. Eclipse Mosquitto (MQTT broker)
 #   2. campus_engine     (Python simulation engine)
@@ -43,11 +43,13 @@ services:
 
   dashboard:
     build:
-      context: ./dashboard_app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: dashboard_app/Dockerfile
     container_name: campus_dashboard
     environment:
       - SQLITE_DB_PATH=/data/campus.db
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
     volumes:
       - engine_data:/data:ro
     ports:

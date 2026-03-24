@@ -1,8 +1,17 @@
 import asyncio
+import json
 import logging
 import random, time
+from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
-from network.topics import room_base_topic, room_payload_topic, room_sensor_topic
+from network.topics import (
+    fleet_hvac_command_topic,
+    room_base_topic,
+    room_hvac_applied_ack_topic,
+    room_hvac_command_topic,
+    room_payload_topic,
+    room_sensor_topic,
+)
 
 log = logging.getLogger("room")
 
@@ -37,6 +46,8 @@ class Room:
         self.light_threshold = 300
         self.state = state if state is not None else {}
         self._sync_state()
+        self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
+        self.register_hvac_subscription()
 
     def _sync_state(self):
         self.state["room_id"] = self.id
@@ -48,6 +59,36 @@ class Room:
 
     def refresh_state(self):
         self._sync_state()
+
+    def register_hvac_subscription(self):
+        async def handle_hvac_command(topic, payload):
+            try:
+                data = json.loads(payload)
+                mode = data["hvac_mode"].upper()
+            except (json.JSONDecodeError, KeyError, AttributeError):
+                log.warning("invalid hvac command from %s", topic)
+                return
+
+            if mode not in ["ON", "OFF", "ECO"]:
+                log.warning("invalid hvac mode for %s: %s", self.id, mode)
+                return
+
+            self.hvac = mode
+            self.refresh_state()
+            command_id = data.get("command_id")
+            await self.broker.publish_json(
+                room_hvac_applied_ack_topic(self.base_topic),
+                {
+                    "room_id": self.id,
+                    "hvac_mode": self.hvac,
+                    "command_id": command_id,
+                },
+            )
+            log.info("room hvac updated %s -> %s", self.id, mode)
+
+        self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
+        self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
+
 
     def tick(self):
         # this is oone simulation step with thermal model + lighting + humidity
@@ -87,7 +128,7 @@ class Room:
             (room_sensor_topic(self.base_topic, "light"), {"ambient": self.lux, "ts": ts}),
         ]
 
-    async def run_loop(self, publish_json):
+    async def run_loop(self):
         #random stagger so we dont hammer the broker with 200 publishes at t=0
         await asyncio.sleep(random.uniform(0, self.interval))
 
@@ -96,6 +137,6 @@ class Room:
             self.tick()
 
             for topic, payload in self.sensor_messages():
-                await publish_json(topic, payload)
+                await self.broker.publish_json(topic, payload)
 
             await asyncio.sleep(max(0, self.interval - (time.perf_counter() - t0)))

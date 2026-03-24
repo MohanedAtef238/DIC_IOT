@@ -14,9 +14,17 @@ def room_hvac_command_topic(base_topic):
     return f"{base_topic}/actuator/hvac"
 
 
+def room_hvac_applied_ack_topic(base_topic):
+    return f"{base_topic}/ack/hvac_applied"
+
+
+def all_room_hvac_applied_ack_topics():
+    return "campus/bldg_01/+/+/ack/hvac_applied"
+
+
 def all_room_payload_topics():
     return "campus/bldg_01/+/+/payload"
 
 
-def all_room_hvac_command_topics():
-    return "campus/bldg_01/+/+/actuator/hvac"
+def fleet_hvac_command_topic():
+    return "campus/bldg_01/actuator/hvac"

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from core.room import Room
 from network.mqtt_client import MQTTClient
-from network.topics import all_room_hvac_command_topics, all_room_payload_topics
+from network.topics import all_room_hvac_applied_ack_topics
 from storage.sqlite_store import SQLiteRoomStore
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
@@ -47,33 +47,28 @@ async def run_engine():
             room_id = f"bldg_01-floor_{fl:02d}-room_{rm:03d}"
             rooms.append(Room(fl, rm, env, state=saved_states.get(room_id)))
 
-    broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
-    rooms_by_topic = {room.base_topic: room for room in rooms}
+    engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
     state_flush_event = asyncio.Event()
+    pending_fleet_acks = {}
+    expected_rooms = len(rooms)
 
-
-    async def handle_room_payload(topic, payload):
+    async def handle_hvac_applied_ack(topic, payload):
         try:
             data = json.loads(payload)
-        except json.JSONDecodeError:
-            log.warning("invalid room payload from %s", topic)
+            room_id = data["room_id"]
+            command_id = data.get("command_id")
+        except (json.JSONDecodeError, KeyError, TypeError):
+            log.warning("invalid hvac applied ack from %s: %s", topic, payload)
             return
 
-        log.info("room payload %s: %s", topic, data)
+        acked_rooms = pending_fleet_acks.setdefault(command_id, set())
+        acked_rooms.add(room_id)
 
-    async def handle_hvac_command(topic, payload):
-        try:
-            data = json.loads(payload)
-            mode = data["hvac_mode"].upper()
-        except (json.JSONDecodeError, KeyError, AttributeError):
-            log.warning("invalid hvac command from %s", topic)
-            return
-
-        room = rooms_by_topic.get(topic.replace("/actuator/hvac", ""))
-        if room and mode in ["ON", "OFF", "ECO"]:
-            room.hvac = mode
-            room.refresh_state()
+        if len(acked_rooms) >= expected_rooms:
+            pending_fleet_acks.pop(command_id, None)
             state_flush_event.set()
+            log.info("state persistence wake requested after fleet hvac command %s", command_id)
+
 
     def persist_all_states():
         for room in rooms:
@@ -88,7 +83,6 @@ async def run_engine():
                     "ts": state["last_update"],
                 }
             )
-            log.info("states persisted")
 
     async def persist_states_loop():
         while True:
@@ -100,13 +94,14 @@ async def run_engine():
             persist_all_states()
             log.info("persisted %d room states to sqlite", len(rooms))
 
-    # broker.subscribe(all_room_payload_topics(), handle_room_payload)
-    broker.subscribe(all_room_hvac_command_topics(), handle_hvac_command)
 
-    # each room gets its own async loop + one for the broker connection
-    tasks = [asyncio.create_task(broker.run()), asyncio.create_task(persist_states_loop())]
+
+    # one persistence task + two tasks per room (room broker + room publish loop)
+    engine_broker.subscribe(all_room_hvac_applied_ack_topics(), handle_hvac_applied_ack)
+    tasks = [asyncio.create_task(engine_broker.run()), asyncio.create_task(persist_states_loop())]
     for r in rooms:
-        tasks.append(asyncio.create_task(r.run_loop(broker.publish_json)))
+        tasks.append(asyncio.create_task(r.broker.run()))
+        tasks.append(asyncio.create_task(r.run_loop()))
 
     log.info("%d tasks launched, entering event loop", len(tasks))
     await asyncio.gather(*tasks)
@@ -114,4 +109,3 @@ async def run_engine():
 
 if __name__ == "__main__":
     asyncio.run(run_engine())
-
