@@ -28,3 +28,6 @@ def all_room_payload_topics():
 
 def fleet_hvac_command_topic():
     return "campus/bldg_01/actuator/hvac"
+
+def room_heartbeat():
+    return "campus/bldg_01/health"
