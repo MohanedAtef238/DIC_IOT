@@ -1,7 +1,8 @@
 import asyncio
 import json
 import logging
-import random, time
+import random
+import time
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
 from network.topics import (
@@ -15,7 +16,6 @@ from network.topics import (
 
 log = logging.getLogger("room")
 
-
 class Room:
     def __init__(self, floor, room_num, env, state=None):
         self.floor = floor
@@ -25,9 +25,10 @@ class Room:
 
         # see .env
         self.alpha = env["alpha"]
-        self.beta  = env["beta"]
+        self.beta = env["beta"]
         self.outside = env["outside_temp"]
         self.interval = env["publish_interval"]
+        self.fault_probability = env.get("fault_probability", 0.01)  # 1% chance of fault per tick
 
         # sensor readings, the defaults at least.
         self.temp = 22.0
@@ -48,6 +49,16 @@ class Room:
         self._sync_state()
         self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
         self.register_hvac_subscription()
+
+        # Fault state
+        self.frozen_temp = None
+        self.frozen_humidity = None
+        self.frozen_lux = None
+        self.frozen_occ = None
+        self.fault_active = False
+        self.fault_type = None
+        self.fault_duration = 0
+        self.fault_start_time = 0
 
     def _sync_state(self):
         self.state["room_id"] = self.id
@@ -89,16 +100,52 @@ class Room:
         self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
         self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
 
+    def _inject_fault(self):
+        if random.random() < self.fault_probability:
+            fault_type = random.choice(["sensor_drift", "frozen_sensor", "telemetry_delay", "node_dropout"])
+            self.fault_type = fault_type
+            self.fault_duration = random.randint(5, 30)  # Fault lasts 5-30 seconds
+            self.fault_start_time = time.time()
+            self.fault_active = True
+            log.warning(f"Fault injected in {self.id}: {fault_type} for {self.fault_duration}s")
+
+    def _clear_fault(self):
+        if self.fault_active and (time.time() - self.fault_start_time) > self.fault_duration:
+            self.fault_active = False
+            self.fault_type = None
+            self.frozen_temp = None
+            self.frozen_humidity = None
+            self.frozen_lux = None
+            self.frozen_occ = None
+            log.info(f"Fault cleared in {self.id}")
 
     def tick(self):
-        # this is oone simulation step with thermal model + lighting + humidity
+        self._inject_fault()
+        self._clear_fault()
+
+        if self.fault_active:
+            if self.fault_type == "sensor_drift":
+                self.temp += random.uniform(-0.5, 0.5)  # Drift temperature
+                self.humidity += random.uniform(-1, 1)  # Drift humidity
+            elif self.fault_type == "frozen_sensor":
+                if self.frozen_temp is None:
+                    self.frozen_temp = self.temp
+                    self.frozen_humidity = self.humidity
+                    self.frozen_lux = self.lux
+                    self.frozen_occ = self.occ
+                self.temp = self.frozen_temp
+                self.humidity = self.frozen_humidity
+                self.lux = self.frozen_lux
+                self.occ = self.frozen_occ
+            # For telemetry_delay and node_dropout, handled in run_loop
+
+        # Normal tick logic
         hvac_pwr = {"ON": 1.0, "ECO": 0.5}.get(self.hvac, 0.0)
         self.temp = calc_temp(self.temp, self.outside, self.alpha, self.beta, hvac_pwr, self.target, self.occ)
 
         self.humidity += 0.05 if self.occ else -0.02
-        self.humidity = round(max(20, min(90, self.humidity)), 2) 
+        self.humidity = round(max(20, min(90, self.humidity)), 2)
 
-        # if someone's in the room, lights must be above threshold, and this way if there is already light from reading from sensor, we wouldnt have to change it. things like an open window and what not. 
         if self.occ:
             self.lux = max(self.lux, self.light_threshold)
         else:
@@ -129,12 +176,18 @@ class Room:
         ]
 
     async def run_loop(self):
-        #random stagger so we dont hammer the broker with 200 publishes at t=0
+        # Random stagger to avoid thundering herd
         await asyncio.sleep(random.uniform(0, self.interval))
 
         while True:
             t0 = time.perf_counter()
             self.tick()
+
+            if self.fault_active and self.fault_type == "telemetry_delay":
+                await asyncio.sleep(random.uniform(1, 5))  # Delay telemetry
+            elif self.fault_active and self.fault_type == "node_dropout":
+                await asyncio.sleep(self.interval)  # Skip publishing
+                continue
 
             for topic, payload in self.sensor_messages():
                 await self.broker.publish_json(topic, payload)
