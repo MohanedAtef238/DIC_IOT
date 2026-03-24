@@ -89,7 +89,7 @@ class SQLiteRoomStore:
             ),
         )
 
-    def _execute(self, query, params):
+    def _execute(self, query, params=()):
         cursor = self._conn.cursor()
         cursor.execute(query, params)
         self._conn.commit()

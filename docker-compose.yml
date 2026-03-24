@@ -2,7 +2,8 @@
 # Spins up:
 #   1. Eclipse Mosquitto (MQTT broker)
 #   2. campus_engine     (Python simulation engine)
-# Both services share the 'iot_net' bridge network.
+#   3. campus_dashboard  (Streamlit UI)
+# All services share the 'iot_net' bridge network.
 
 services:
   mosquitto:
@@ -23,6 +24,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   engine:
     build:
       context: ./engine_app
@@ -38,10 +40,29 @@ services:
       mosquitto:
         condition: service_healthy
     restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard_app
+      dockerfile: Dockerfile
+    container_name: campus_dashboard
+    environment:
+      - SQLITE_DB_PATH=/data/campus.db
+    volumes:
+      - engine_data:/data:ro
+    ports:
+      - "8501:8501"
+    networks:
+      - iot_net
+    depends_on:
+      - engine
+    restart: unless-stopped
+
 volumes:
   mosquitto_data:
   mosquitto_log:
   engine_data:
+
 networks:
   iot_net:
     driver: bridge

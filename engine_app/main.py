@@ -37,27 +37,20 @@ async def run_engine():
 
     log.info("booting campus sim — %d nodes (%dx%d)", total, nfloors, nrooms)
 
-    rooms = []
-    for fl in range(1, nfloors + 1):
-        for rm in range(1, nrooms + 1):
-            rooms.append(Room(fl, rm, env))
-
-    broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
     store = SQLiteRoomStore(env["sqlite_db_path"])
     store.connect()
     saved_states = store.load_room_states()
+
+    rooms = []
+    for fl in range(1, nfloors + 1):
+        for rm in range(1, nrooms + 1):
+            room_id = f"bldg_01-floor_{fl:02d}-room_{rm:03d}"
+            rooms.append(Room(fl, rm, env, state=saved_states.get(room_id)))
+
+    broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
     rooms_by_topic = {room.base_topic: room for room in rooms}
-    rooms_by_id = {room.id: room for room in rooms}
+    state_flush_event = asyncio.Event()
 
-    for room_id, state in saved_states.items():
-        room = rooms_by_id.get(room_id)
-        if room is None:
-            continue
-
-        room.temp = state["last_temp"]
-        room.humidity = state["last_humidity"]
-        room.hvac = state["hvac_mode"]
-        room.target = state["target_temp"]
 
     async def handle_room_payload(topic, payload):
         try:
@@ -66,7 +59,6 @@ async def run_engine():
             log.warning("invalid room payload from %s", topic)
             return
 
-        store.save_room_payload(data)
         log.info("room payload %s: %s", topic, data)
 
     async def handle_hvac_command(topic, payload):
@@ -80,12 +72,39 @@ async def run_engine():
         room = rooms_by_topic.get(topic.replace("/actuator/hvac", ""))
         if room and mode in ["ON", "OFF", "ECO"]:
             room.hvac = mode
+            room.refresh_state()
+            state_flush_event.set()
 
-    broker.subscribe(all_room_payload_topics(), handle_room_payload)
+    def persist_all_states():
+        for room in rooms:
+            state = room.state
+            store.save_room_payload(
+                {
+                    "room_id": state["room_id"],
+                    "temperature": state["last_temp"],
+                    "humidity": state["last_humidity"],
+                    "hvac_status": state["hvac_mode"],
+                    "target_temp": state["target_temp"],
+                    "ts": state["last_update"],
+                }
+            )
+            log.info("states persisted")
+
+    async def persist_states_loop():
+        while True:
+            try:
+                await asyncio.wait_for(state_flush_event.wait(), timeout=30)
+            except asyncio.TimeoutError:
+                pass
+            state_flush_event.clear()
+            persist_all_states()
+            log.info("persisted %d room states to sqlite", len(rooms))
+
+    # broker.subscribe(all_room_payload_topics(), handle_room_payload)
     broker.subscribe(all_room_hvac_command_topics(), handle_hvac_command)
 
     # each room gets its own async loop + one for the broker connection
-    tasks = [asyncio.create_task(broker.run())]
+    tasks = [asyncio.create_task(broker.run()), asyncio.create_task(persist_states_loop())]
     for r in rooms:
         tasks.append(asyncio.create_task(r.run_loop(broker.publish_json)))
 
@@ -95,3 +114,4 @@ async def run_engine():
 
 if __name__ == "__main__":
     asyncio.run(run_engine())
+

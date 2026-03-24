@@ -8,7 +8,7 @@ log = logging.getLogger("room")
 
 
 class Room:
-    def __init__(self, floor, room_num, env):
+    def __init__(self, floor, room_num, env, state=None):
         self.floor = floor
         self.room_num = room_num
         self.id = f"bldg_01-floor_{floor:02d}-room_{room_num:03d}"
@@ -25,9 +25,29 @@ class Room:
         self.humidity = 50.0
         self.target = env["default_target"]
         self.hvac = "OFF"
+
+        if state:
+            self.temp = state['last_temp']
+            self.humidity = state['last_humidity']
+            self.target = state['target_temp']
+            self.hvac = str(state['hvac_mode']).upper()
+
         self.occ = False
         self.lux = 200
         self.light_threshold = 300
+        self.state = state if state is not None else {}
+        self._sync_state()
+
+    def _sync_state(self):
+        self.state["room_id"] = self.id
+        self.state["last_temp"] = self.temp
+        self.state["last_humidity"] = self.humidity
+        self.state["target_temp"] = self.target
+        self.state["hvac_mode"] = self.hvac
+        self.state["last_update"] = int(time.time())
+
+    def refresh_state(self):
+        self._sync_state()
 
     def tick(self):
         # this is oone simulation step with thermal model + lighting + humidity
@@ -42,6 +62,8 @@ class Room:
             self.lux = max(self.lux, self.light_threshold)
         else:
             self.lux = 0
+
+        self._sync_state()
 
     def payload(self):
         return {
