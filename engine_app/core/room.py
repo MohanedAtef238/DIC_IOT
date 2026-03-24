@@ -192,8 +192,8 @@ class Room:
             tick_start = time.perf_counter()
             self.tick()
             tick_end = time.perf_counter()
-            tick_duration = tick_end - tick_start
-            self.performance_metrics["tick_duration"].append(tick_duration)
+            tick_duration_ms = (tick_end - tick_start) * 1000.0
+            self.performance_metrics["tick_duration"].append(tick_duration_ms)
 
             # Measure CPU and memory usage
             cpu_usage = psutil.cpu_percent(interval=None)
@@ -208,7 +208,7 @@ class Room:
                 avg_memory_usage = sum(self.performance_metrics["memory_usage"][-10:]) / 10
                 log.info(
                     f"Performance metrics for {self.id}: "
-                    f"Avg tick duration: {avg_tick_duration:.4f}s, "
+                    f"Avg tick duration: {avg_tick_duration:.4f}ms, "
                     f"Avg CPU usage: {avg_cpu_usage:.2f}%, "
                     f"Avg memory usage: {avg_memory_usage:.2f}%"
                 )
@@ -224,6 +224,7 @@ class Room:
 
             # Calculate event loop latency
             loop_latency = time.perf_counter() - tick_start
-            self.performance_metrics["event_loop_latency"].append(loop_latency)
+            loop_latency_ms = loop_latency * 1000.0
+            self.performance_metrics["event_loop_latency"].append(loop_latency_ms)
 
             await asyncio.sleep(max(0, self.interval - loop_latency))
