@@ -46,7 +46,7 @@ mosquitto_sub -h localhost -t "campus/#" -v
 
 ```bash
 mosquitto_pub -h localhost \
-  -t "campus/bldg_01/floor_01/room_001/actuator/hvac" \
+  -t "campus/b01/floor_01/room_001/actuator/hvac" \
   -m '{"hvac_mode":"ECO"}'
 ```
 
@@ -55,7 +55,7 @@ Valid modes: `ON`, `OFF`, `ECO`.
 To reduce noise, subscribe to one room only:
 
 ```bash
-mosquitto_sub -h localhost -t "campus/bldg_01/floor_01/room_001/sensor/#" -v
+mosquitto_sub -h localhost -t "campus/b01/floor_01/room_001/sensor/#" -v
 ```
 
 ## Configuration (`.env`)

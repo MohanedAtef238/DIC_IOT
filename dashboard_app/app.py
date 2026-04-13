@@ -1,4 +1,4 @@
-﻿import atexit
+import atexit
 import os
 import sqlite3
 import logging
@@ -20,7 +20,7 @@ from network.mqtt_client import MQTTClient
 DB_PATH = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
 MQTT_HOST = os.environ.get("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
-FLEET_HVAC_TOPIC = "campus/bldg_01/actuator/hvac"
+FLEET_HVAC_TOPIC = "campus/b01/actuator/hvac"
 VALID_HVAC_MODES = ["OFF", "ECO", "ON"]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
