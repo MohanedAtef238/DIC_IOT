@@ -72,6 +72,19 @@ class CoAP_room:
         self.fault_duration = 0
         self.fault_start_time = 0
 
+        # RFC 7641 Observe: shadow copies used to detect real value changes.
+        # updated_state() is only called on a resource when its value has
+        # actually moved beyond the threshold, so observers (edge gateways)
+        # receive a UDP notification only when there is new information.
+        self._obs_prev_temp     = self.temp
+        self._obs_prev_humidity = self.humidity
+        self._obs_prev_occ      = self.occ
+        self._obs_prev_lux      = self.lux
+        # Minimum change required to count as "different" for float sensors.
+        self._TEMP_DELTA = 0.5   # °C
+        self._HUM_DELTA  = 1.0   # %RH
+        self._LUX_DELTA  = 20    # lux (range 0-1000)
+
     def _sync_state(self):
         self.state["room_id"] = self.id
         self.state["last_temp"] = self.temp
@@ -248,10 +261,36 @@ class CoAP_room:
             #     await asyncio.sleep(self.interval)  # Skip publishing
             #     continue
 
+            # RFC 7641 change-only Observe notifications
+            # Compare each sensor to its shadow copy; only push to observers when a change occures 
+            changed: set[str] = set()
+
+            if abs(self.temp - self._obs_prev_temp) >= self._TEMP_DELTA:
+                changed.add("temperature")
+                self._obs_prev_temp = self.temp
+
+            if abs(self.humidity - self._obs_prev_humidity) >= self._HUM_DELTA:
+                changed.add("humidity")
+                self._obs_prev_humidity = self.humidity
+
+            if self.occ != self._obs_prev_occ:
+                changed.add("occupancy")
+                self._obs_prev_occ = self.occ
+
+            if abs(self.lux - self._obs_prev_lux) >= self._LUX_DELTA:
+                changed.add("light")
+                self._obs_prev_lux = self.lux
+
+            for name in changed:
+                self.sensor_resources[name].updated_state()
+
+            # Aggregate payload: notify only if at least one sensor changed.
+            if changed:
+                self.payload_resource.updated_state()
+
+            # Heartbeat is time-based, not value-based — always notify.
             self.update_heartbeat()
-            self.payload_resource.updated_state()
-            for res in self.sensor_resources.values():
-                res.updated_state()
+
             if self.room_num==7 and self.floor==3:
                 await asyncio.sleep(40)
 
