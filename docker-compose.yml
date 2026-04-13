@@ -36,6 +36,8 @@ services:
       - iot_net
     volumes:
       - engine_data:/data
+    ports:
+      - "5700-5899:5700-5899/udp"
     depends_on:
       mosquitto:
         condition: service_healthy

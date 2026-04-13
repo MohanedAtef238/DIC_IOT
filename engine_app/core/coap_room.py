@@ -4,19 +4,23 @@ import logging
 import random
 import time
 import psutil  # For CPU and memory usage
-from network.mqtt_client import MQTTClient
+import aiocoap.resource as resource
+import aiocoap
 from utils.temperature_calculator import calc_temp
-from network.topics import *
-log = logging.getLogger("room")
 
-class Room:
+log = logging.getLogger("coap_room")
+
+_JSON_CF = aiocoap.numbers.media_types_rev['application/json'] # the parameter to set content format to application/json in CoAP responses
+
+class CoAP_room:
     def __init__(self, floor, room_num, env, state=None):
         self.last_heartbeat = int(time.time())
 
         self.floor = floor
         self.room_num = room_num
         self.id = f"b01-f{floor:02d}-r{room_num:03d}"
-        self.base_topic = room_base_topic(floor, room_num)
+        
+        self.port = 5700 + (floor - 1) * env["per_floor"] + (room_num - 1)
 
         # see .env
         self.alpha = env["alpha"]
@@ -55,8 +59,8 @@ class Room:
             self.lux = round(self.dimmer / 100 * 1000)
         self.state = state if state is not None else {}
         self._sync_state()
-        self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
-        self.register_hvac_subscription()
+        
+        self.setup_coap_server()
 
         # Fault state
         self.frozen_temp = None
@@ -79,47 +83,39 @@ class Room:
 
     def refresh_state(self):
         self._sync_state()
-    
-    async def publish_heartbeat(self):
+
+    def update_heartbeat(self):
         self.last_heartbeat = int(time.time())
         self._sync_state()
-        await self.broker.publish_json(
-            room_heartbeat(),
-            {
-                "room_id": self.id,
-                "ts": self.last_heartbeat,
-            }
-        )
+        self.heartbeat_resource.updated_state()
 
+    def setup_coap_server(self):
+        self.site = resource.Site()
+        
+        self.sensor_resources = {}
+        for s in ["temperature", "humidity", "occupancy", "light"]:
+            self.sensor_resources[s] = SensorResource(self, s)
+            self.site.add_resource(['sensor', s], self.sensor_resources[s])
+            
+        self.payload_resource = PayloadResource(self)
+        self.site.add_resource(['payload'], self.payload_resource)
+        
+        self.heartbeat_resource = HeartbeatResource(self)
+        self.site.add_resource(['health'], self.heartbeat_resource)
 
-    def register_hvac_subscription(self):
-        async def handle_hvac_command(topic, payload):
-            try:
-                data = json.loads(payload)
-                mode = data["hvac_mode"].upper()
-            except (json.JSONDecodeError, KeyError, AttributeError):
-                log.warning("invalid hvac command from %s", topic)
-                return
+        self.hvac_resource = ActuatorResource(self, "hvac")
+        self.site.add_resource(['actuator', 'hvac'], self.hvac_resource)
 
-            if mode not in ["ON", "OFF", "ECO"]:
-                log.warning("invalid hvac mode for %s: %s", self.id, mode)
-                return
+    async def apply_hvac_command(self, mode):
+        mode = mode.upper()
+        if mode not in ["ON", "OFF", "ECO"]:
+            log.warning("invalid hvac mode for %s: %s", self.id, mode)
+            return False
 
-            self.hvac = mode
-            self.refresh_state()
-            command_id = data.get("command_id")
-            await self.broker.publish_json(
-                room_hvac_applied_ack_topic(self.base_topic),
-                {
-                    "room_id": self.id,
-                    "hvac_mode": self.hvac,
-                    "command_id": command_id,
-                },
-            )
-            log.info("room hvac updated %s -> %s", self.id, mode)
-
-        self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
-        self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
+        self.hvac = mode
+        self.refresh_state()
+        log.info("room hvac updated %s -> %s", self.id, mode)
+        return True
 
     def _inject_fault(self):
         if random.random() < self.fault_probability:
@@ -141,24 +137,27 @@ class Room:
             log.info(f"Fault cleared in {self.id}")
 
     def tick(self):
-        self._inject_fault()
-        self._clear_fault()
+        # self._inject_fault()
+        # self._clear_fault()
 
-        if self.fault_active:
-            if self.fault_type == "sensor_drift":
-                self.temp += random.uniform(-0.5, 0.5)  # Drift temperature
-                self.humidity += random.uniform(-1, 1)  # Drift humidity
-            elif self.fault_type == "frozen_sensor":
-                if self.frozen_temp is None:
-                    self.frozen_temp = self.temp
-                    self.frozen_humidity = self.humidity
-                    self.frozen_lux = self.lux
-                    self.frozen_occ = self.occ
-                self.temp = self.frozen_temp
-                self.humidity = self.frozen_humidity
-                self.lux = self.frozen_lux
-                self.occ = self.frozen_occ
-            # For telemetry_delay and node_dropout, handled in run_loop
+        # if self.fault_active:
+        #     if self.fault_type == "sensor_drift":
+        #         self.temp += random.uniform(-0.5, 0.5)  # Drift temperature
+        #         self.humidity += random.uniform(-1, 1)  # Drift humidity
+        #     elif self.fault_type == "frozen_sensor":
+        #         if self.frozen_temp is None:
+        #             self.frozen_temp = self.temp
+        #             self.frozen_humidity = self.humidity
+        #             self.frozen_lux = self.lux
+        #             self.frozen_occ = self.occ
+        #         assert self.frozen_temp is not None
+        #         assert self.frozen_humidity is not None
+        #         assert self.frozen_lux is not None
+        #         assert self.frozen_occ is not None
+        #         self.temp = self.frozen_temp
+        #         self.humidity = self.frozen_humidity
+        #         self.lux = self.frozen_lux
+        #         self.occ = self.frozen_occ
 
         # Normal tick logic
         hvac_pwr = {"ON": 1.0, "ECO": 0.5}.get(self.hvac, 0.0)
@@ -171,7 +170,6 @@ class Room:
             self.lux = max(self.lux, self.light_threshold)
 
         self._sync_state()
-
 
     def payload(self):
         return {
@@ -194,15 +192,26 @@ class Room:
             },
         }
 
-    def sensor_messages(self):
+    def get_sensor_value(self, sensor_name):
         ts = int(time.time())
-        return [
-            (room_payload_topic(self.base_topic), self.payload()),
-            (room_sensor_topic(self.base_topic, "temperature"), {"value": self.temp, "ts": ts}),
-            (room_sensor_topic(self.base_topic, "humidity"), {"value": self.humidity, "ts": ts}),
-            (room_sensor_topic(self.base_topic, "occupancy"), {"value": self.occ, "ts": ts}),
-            (room_sensor_topic(self.base_topic, "light"), {"ambient": self.lux, "ts": ts}),
-        ]
+        if sensor_name == "temperature":
+            return {"value": self.temp, "ts": ts}
+        elif sensor_name == "humidity":
+            return {"value": self.humidity, "ts": ts}
+        elif sensor_name == "occupancy":
+            return {"value": self.occ, "ts": ts}
+        elif sensor_name == "light":
+            return {"ambient": self.lux, "ts": ts}
+        return {}
+
+    async def run_server(self):
+        self.context = await aiocoap.Context.create_server_context(self.site, bind=('0.0.0.0', self.port))
+        log.info(f"CoAP server running for room {self.id} on port {self.port}")
+        try:
+            while True:
+                await asyncio.sleep(3600)
+        except asyncio.CancelledError:
+            pass
 
     async def run_loop(self):
         # Random stagger to avoid thundering herd
@@ -233,16 +242,16 @@ class Room:
                     f"Avg memory usage: {avg_memory_usage:.2f}%"
                 )
 
-            if self.fault_active and self.fault_type == "telemetry_delay":
-                await asyncio.sleep(random.uniform(1, 5))  # Delay telemetry
-            elif self.fault_active and self.fault_type == "node_dropout":
-                await asyncio.sleep(self.interval)  # Skip publishing
-                continue
+            # if self.fault_active and self.fault_type == "telemetry_delay":
+            #     await asyncio.sleep(random.uniform(1, 5))  # Delay telemetry
+            # elif self.fault_active and self.fault_type == "node_dropout":
+            #     await asyncio.sleep(self.interval)  # Skip publishing
+            #     continue
 
-            for topic, payload in self.sensor_messages():
-                await self.broker.publish_json(topic, payload)
-                
-            await self.publish_heartbeat()
+            self.update_heartbeat()
+            self.payload_resource.updated_state()
+            for res in self.sensor_resources.values():
+                res.updated_state()
             if self.room_num==7 and self.floor==3:
                 await asyncio.sleep(40)
 
@@ -252,3 +261,57 @@ class Room:
             self.performance_metrics["event_loop_latency"].append(loop_latency_ms)
 
             await asyncio.sleep(max(0, self.interval - loop_latency))
+
+# CoAP stuff
+
+class SensorResource(resource.ObservableResource):
+    def __init__(self, room, sensor_name):
+        super().__init__()
+        self.room = room
+        self.sensor_name = sensor_name
+
+    async def render_get(self, request):
+        payload = self.room.get_sensor_value(self.sensor_name)
+        return aiocoap.Message(payload=json.dumps(payload).encode('utf-8'), content_format=_JSON_CF)
+
+class ActuatorResource(resource.Resource):
+    def __init__(self, room, actuator_name):
+        super().__init__()
+        self.room = room
+        self.actuator_name = actuator_name
+
+    async def render_put(self, request):
+        if request.opt.content_format != _JSON_CF:
+            return aiocoap.Message(code=aiocoap.numbers.codes.Code.UNSUPPORTED_CONTENT_FORMAT)
+        try:
+            data = json.loads(request.payload.decode('utf-8'))
+            if self.actuator_name == "hvac":
+                success = await self.room.apply_hvac_command(data.get("hvac_mode", ""))
+                if success:
+                    body = json.dumps({
+                        "room_id": self.room.id,
+                        "hvac_mode": self.room.hvac,
+                    }).encode('utf-8')
+                    return aiocoap.Message(code=aiocoap.CHANGED, payload=body, content_format=_JSON_CF)
+            return aiocoap.Message(code=aiocoap.BAD_REQUEST)
+        except Exception:
+            return aiocoap.Message(code=aiocoap.BAD_REQUEST)
+
+class PayloadResource(resource.ObservableResource):
+    def __init__(self, room):
+        super().__init__()
+        self.room = room
+
+    async def render_get(self, request):
+        return aiocoap.Message(payload=json.dumps(self.room.payload()).encode('utf-8'), content_format=_JSON_CF)
+
+class HeartbeatResource(resource.ObservableResource):
+    def __init__(self, room):
+        super().__init__()
+        self.room = room
+
+    async def render_get(self, request):
+        return aiocoap.Message(payload=json.dumps({
+            "room_id": self.room.id,
+            "ts": self.room.last_heartbeat,
+        }).encode('utf-8'), content_format=_JSON_CF)

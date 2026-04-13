@@ -5,7 +5,8 @@ import os, sys
 import time
 from dotenv import load_dotenv
 
-from core.room import Room
+from core.mqtt_room import MQTT_room
+from core.coap_room import CoAP_room
 from network.mqtt_client import MQTTClient
 from network.topics import *
 from storage.sqlite_store import SQLiteRoomStore
@@ -38,26 +39,30 @@ async def run_engine():
     nrooms  = env["per_floor"]
     total = nfloors * nrooms
 
-    log.info("booting campus sim — %d nodes (%dx%d)", total, nfloors, nrooms)
+    log.info("booting campus sim — %d nodes (%dx%d), paired MQTT+CoAP", total, nfloors, nrooms)
 
     store = SQLiteRoomStore(env["sqlite_db_path"])
     store.connect()
     saved_states = store.load_room_states()
 
-    rooms = []
+    # Each floor gets nrooms//2 MQTT rooms (odd slots) and nrooms//2 CoAP rooms (even slots).
+    # Pairs are created together: MQTT at rm, CoAP at rm+1.
+    mqtt_rooms = []
+    coap_rooms = []
     for fl in range(1, nfloors + 1):
-        for rm in range(1, nrooms + 1):
-            room_id = f"b01-f{fl:02d}-r{rm:03d}"
-            rooms.append(Room(fl, rm, env, state=saved_states.get(room_id)))
+        for rm in range(1, nrooms, 2):
+            mqtt_id = f"b01-f{fl:02d}-r{rm:03d}"
+            coap_id = f"b01-f{fl:02d}-r{rm+1:03d}"
+            mqtt_rooms.append(MQTT_room(fl, rm,     env, state=saved_states.get(mqtt_id)))
+            coap_rooms.append(CoAP_room(fl, rm + 1, env, state=saved_states.get(coap_id)))
+
+    all_rooms = mqtt_rooms + coap_rooms
 
     engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
     state_flush_event = asyncio.Event()
     pending_fleet_acks = {}
-    expected_rooms = len(rooms)
-
-    room_index_by_id = {room.id: index for index, room in enumerate(rooms)}
-    last_heartbeat = [int(time.time())] * expected_rooms
-    slowest_room_heartbeat = rooms[0].id
+    # Only MQTT rooms send applied-ack messages back over the broker.
+    expected_mqtt_rooms = len(mqtt_rooms)
 
     async def handle_hvac_applied_ack(topic, payload):
         try:
@@ -71,14 +76,14 @@ async def run_engine():
         acked_rooms = pending_fleet_acks.setdefault(command_id, set())
         acked_rooms.add(room_id)
 
-        if len(acked_rooms) >= expected_rooms:
+        if len(acked_rooms) >= expected_mqtt_rooms:
             pending_fleet_acks.pop(command_id, None)
             state_flush_event.set()
             log.info("state persistence wake requested after fleet hvac command %s", command_id)
 
 
     def persist_all_states():
-        for room in rooms:
+        for room in all_rooms:
             state = room.state
             store.save_room_payload(
                 {
@@ -100,68 +105,44 @@ async def run_engine():
                 pass
             state_flush_event.clear()
             persist_all_states()
-            log.info("persisted %d room states to sqlite", len(rooms))
+            log.info("persisted %d room states to sqlite", len(all_rooms))
 
     if not saved_states:
         persist_all_states()
-        log.info("sqlite was empty; initialized %d rooms with default values", len(rooms))
-
-    async def handle_heartbeat(topic, payload):
-        nonlocal slowest_room_heartbeat
-
-        try:
-            data = json.loads(payload)
-            room_id = data["room_id"]
-        except (json.JSONDecodeError, KeyError, TypeError):
-            log.warning("invalid heartbeat from %s: %s", topic, payload)
-            return
-
-        room_index = room_index_by_id.get(room_id)
-        if room_index is None:
-            log.warning("heartbeat received for unknown room_id: %s", room_id)
-            return
-
-        last_heartbeat[room_index] = int(time.time())
-
-        if room_id == slowest_room_heartbeat:
-            slowest_index = last_heartbeat.index(min(last_heartbeat))
-            slowest_room_heartbeat = rooms[slowest_index].id
+        log.info("sqlite was empty; initialized %d rooms with default values", len(all_rooms))
 
     async def check_health():
         heartbeat_timeout = env["health_interval"]
-
         while True:
-            slowest_index = room_index_by_id[slowest_room_heartbeat]
-            seconds_since_last_heartbeat = int(time.time()) - last_heartbeat[slowest_index]
-
-            if seconds_since_last_heartbeat >= heartbeat_timeout:
+            now = int(time.time())
+            slowest = max(all_rooms, key=lambda r: now - r.last_heartbeat)
+            seconds_since = now - slowest.last_heartbeat
+            if seconds_since >= heartbeat_timeout:
                 log.warning(
                     "room %s missed heartbeat for %ds (timeout=%ds)",
-                    slowest_room_heartbeat,
-                    seconds_since_last_heartbeat,
-                    heartbeat_timeout,
+                    slowest.id, seconds_since, heartbeat_timeout,
                 )
-                await asyncio.sleep(5)
             else:
                 log.info(
                     "health check ok; slowest room %s last heartbeat %ds ago",
-                    slowest_room_heartbeat,
-                    seconds_since_last_heartbeat,
+                    slowest.id, seconds_since,
                 )
-            await asyncio.sleep(max(0, env["health_interval"] - seconds_since_last_heartbeat))
+            await asyncio.sleep(env["health_interval"])
 
 
 
     # one persistence task + two tasks per room (room broker + room publish loop)
     engine_broker.subscribe(all_room_hvac_applied_ack_topics(), handle_hvac_applied_ack)
-    engine_broker.subscribe(room_heartbeat(), handle_heartbeat)
     tasks = [
         asyncio.create_task(engine_broker.run()),
         asyncio.create_task(persist_states_loop()),
         asyncio.create_task(check_health()),
     ]
-    for r in rooms:
+    for r in mqtt_rooms:
         tasks.append(asyncio.create_task(r.broker.run()))
+        tasks.append(asyncio.create_task(r.run_loop()))
+    for r in coap_rooms:
+        tasks.append(asyncio.create_task(r.run_server()))
         tasks.append(asyncio.create_task(r.run_loop()))
 
     log.info("%d tasks launched, entering event loop", len(tasks))

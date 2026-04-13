@@ -39,11 +39,11 @@ class MQTTClient:
     async def publish_loop(self, client):
         while True:
             t, p = await self.queue.get()
-            await client.publish(t, payload=p)
+            await client.publish(t, payload=p, qos=2)
 
     async def subscribe_loop(self, client):
         for topic_filter, _ in self.subscriptions:
-            await client.subscribe(topic_filter)
+            await client.subscribe(topic_filter, qos=2)
 
         async for msg in client.messages:
             topic = str(msg.topic)
