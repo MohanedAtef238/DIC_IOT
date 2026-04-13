@@ -1,0 +1,14 @@
+# Generated certs and secrets — never commit private keys or shared secrets
+certs/*.key
+certs/*.crt
+certs/dtls_psk.json
+
+# Environment variables — contains hostnames, ports, and secret file paths
+.env
+
+# SQLite database written at runtime
+*.db
+
+# Python cache
+__pycache__/
+*.pyc

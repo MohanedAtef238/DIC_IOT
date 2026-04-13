@@ -30,6 +30,22 @@ def get_env():
     conf["mqtt_port"] = int(os.environ["MQTT_PORT"])
     conf["sqlite_db_path"] = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
     conf["publish_interval"] = int(os.environ.get("PUBLISH_INTERVAL",5))
+    conf["mqtt_ca_cert"] = os.environ.get("MQTT_CA_CERT")  # None = plain TCP
+    conf["dtls_psk"] = None
+    # Prefer JSON file (shared with test scripts) so keys always match.
+    dtls_psk_file = os.environ.get("DTLS_PSK_FILE", "/certs/dtls_psk.json")
+    if os.path.isfile(dtls_psk_file):
+        with open(dtls_psk_file) as f:
+            d = json.load(f)
+        conf["dtls_psk"] = {"psk_identity": d["psk_identity"], "psk_key_b64": d["psk_key_b64"]}
+        log.info("loaded DTLS PSK from %s", dtls_psk_file)
+    else:
+        identity = os.environ.get("DTLS_PSK_IDENTITY")
+        key_b64  = os.environ.get("DTLS_PSK_KEY_B64")
+        if identity and key_b64:
+            conf["dtls_psk"] = {"psk_identity": identity, "psk_key_b64": key_b64}
+        else:
+            log.warning("No DTLS PSK found — CoAP rooms will run plain")
     return conf
 
 
@@ -58,7 +74,7 @@ async def run_engine():
 
     all_rooms = mqtt_rooms + coap_rooms
 
-    engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
+    engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"], ca_cert=env["mqtt_ca_cert"])
     state_flush_event = asyncio.Event()
     pending_fleet_acks = {}
     # Only MQTT rooms send applied-ack messages back over the broker.

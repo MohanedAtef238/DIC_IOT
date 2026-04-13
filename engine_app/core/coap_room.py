@@ -1,11 +1,14 @@
 import asyncio
+import base64
 import json
 import logging
 import random
+import socket
 import time
 import psutil  # For CPU and memory usage
 import aiocoap.resource as resource
 import aiocoap
+from aiocoap.credentials import CredentialsMap, DTLS
 from utils.temperature_calculator import calc_temp
 
 log = logging.getLogger("coap_room")
@@ -21,6 +24,7 @@ class CoAP_room:
         self.id = f"b01-f{floor:02d}-r{room_num:03d}"
         
         self.port = 5700 + (floor - 1) * env["per_floor"] + (room_num - 1)
+        self.dtls_psk = env.get("dtls_psk")  # pre-loaded dict from main, or None
 
         # see .env
         self.alpha = env["alpha"]
@@ -218,13 +222,57 @@ class CoAP_room:
         return {}
 
     async def run_server(self):
-        self.context = await aiocoap.Context.create_server_context(self.site, bind=('0.0.0.0', self.port))
-        log.info(f"CoAP server running for room {self.id} on port {self.port}")
+        server_credentials = None
+        if self.dtls_psk:
+            try:
+                psk_bytes = base64.b64decode(self.dtls_psk["psk_key_b64"])
+                identity_str = self.dtls_psk["psk_identity"]
+                # Key by identity so find_dtls_psk() can look it up during handshake.
+                cmap = CredentialsMap()
+                cmap[f":{identity_str}"] = DTLS(
+                    psk=psk_bytes,
+                    client_identity=identity_str.encode(),
+                )
+                server_credentials = cmap
+                log.info("DTLS PSK active for %s (identity=%s)", self.id, identity_str)
+            except Exception as exc:
+                log.error("failed to build DTLS credentials for %s: %s — falling back to plain CoAP", self.id, exc)
+
+        # tinydtls_server rejects 0.0.0.0; bind one context per specific IP instead.
+        # It also adds a +1 port offset (COAPS_PORT - COAP_PORT); subtract it
+        # so the actual listening port matches self.port.
+        transports = ["tinydtls_server"] if server_credentials else None
+        bind_port = self.port - 1 if server_credentials else self.port
+        scheme = "coaps" if server_credentials else "coap"
+        self._contexts = []
+        for addr in self._bind_addresses():
+            ctx = await aiocoap.Context.create_server_context(
+                self.site,
+                bind=(addr, bind_port),
+                server_credentials=server_credentials,
+                transports=transports,
+            )
+            self._contexts.append(ctx)
+            log.info("CoAP server running for room %s on %s://%s:%d", self.id, scheme, addr, self.port)
         try:
             while True:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
             pass
+
+    @staticmethod
+    def _bind_addresses() -> set:
+        """127.0.0.1 (loopback) + container's eth0 IP."""
+        addrs = {"127.0.0.1"}
+        try:
+            # Dummy UDP connect reveals the outbound source IP (eth0).
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("10.0.0.0", 1))
+            addrs.add(s.getsockname()[0])
+            s.close()
+        except Exception:
+            pass
+        return addrs
 
     async def run_loop(self):
         # Random stagger to avoid thundering herd

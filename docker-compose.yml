@@ -10,17 +10,19 @@ services:
     image: eclipse-mosquitto:2
     container_name: mosquitto
     ports:
-      - "1883:1883"     # TCP
+      - "1883:1883"     # TCP (plain)
+      - "8883:8883"     # TCP (TLS)
       - "9001:9001"     # WebSocket
     volumes:
       - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./certs:/mosquitto/certs:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     networks:
       - iot_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "healthcheck", "-m", "ping"]
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-p", "1883", "-t", "healthcheck", "-m", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -36,6 +38,7 @@ services:
       - iot_net
     volumes:
       - engine_data:/data
+      - ./certs:/certs:ro
     ports:
       - "5700-5899:5700-5899/udp"
     depends_on:

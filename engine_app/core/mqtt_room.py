@@ -55,7 +55,7 @@ class MQTT_room:
             self.lux = round(self.dimmer / 100 * 1000)
         self.state = state if state is not None else {}
         self._sync_state()
-        self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"])
+        self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"], ca_cert=env.get("mqtt_ca_cert"))
         self.register_hvac_subscription()
 
         # Fault state
