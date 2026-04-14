@@ -3,8 +3,7 @@ certs/*.key
 certs/*.crt
 certs/dtls_psk.json
 
-# Environment variables — contains hostnames, ports, and secret file paths
-.env
+# Environment variables — contains mostly configuration values, not that secretive in this project's scope
 
 # SQLite database written at runtime
 *.db
