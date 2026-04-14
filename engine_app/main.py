@@ -31,7 +31,11 @@ def get_env():
     conf["sqlite_db_path"] = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
     conf["publish_interval"] = int(os.environ.get("PUBLISH_INTERVAL",5))
     conf["mqtt_ca_cert"] = os.environ.get("MQTT_CA_CERT")  # None = plain TCP
+    conf["coap_dtls_enabled"] = os.environ.get("COAP_DTLS_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
     conf["dtls_psk"] = None
+    if not conf["coap_dtls_enabled"]:
+        log.warning("COAP_DTLS_ENABLED is false; CoAP rooms will run plain UDP")
+        return conf
     # Prefer JSON file (shared with test scripts) so keys always match.
     dtls_psk_file = os.environ.get("DTLS_PSK_FILE", "/certs/dtls_psk.json")
     if os.path.isfile(dtls_psk_file):
@@ -97,6 +101,23 @@ async def run_engine():
             state_flush_event.set()
             log.info("state persistence wake requested after fleet hvac command %s", command_id)
 
+    async def handle_fleet_hvac_command(topic, payload):
+        try:
+            data = json.loads(payload)
+            mode = str(data["hvac_mode"]).upper()
+        except (json.JSONDecodeError, KeyError, TypeError):
+            log.warning("invalid fleet hvac command from %s: %s", topic, payload)
+            return
+
+        updated = 0
+        for room in coap_rooms:
+            if await room.apply_hvac_command(mode):
+                updated += 1
+
+        if updated:
+            state_flush_event.set()
+            log.info("applied fleet hvac command %s to %d CoAP rooms", mode, updated)
+
 
     def persist_all_states():
         for room in all_rooms:
@@ -149,6 +170,7 @@ async def run_engine():
 
     # one persistence task + two tasks per room (room broker + room publish loop)
     engine_broker.subscribe(all_room_hvac_applied_ack_topics(), handle_hvac_applied_ack)
+    engine_broker.subscribe(fleet_hvac_command_topic(), handle_fleet_hvac_command)
     tasks = [
         asyncio.create_task(engine_broker.run()),
         asyncio.create_task(persist_states_loop()),
