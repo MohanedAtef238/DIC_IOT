@@ -220,5 +220,110 @@
         "x": 1130,
         "y": 220,
         "wires": []
+    },
+    {
+        "id": "794dd6c193d3a444",
+        "type": "mqtt in",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "topic": "",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "75bf69f74513b636",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 950,
+        "y": 500,
+        "wires": [
+            [
+                "30b9849158dd80e5"
+            ]
+        ]
+    },
+    {
+        "id": "30b9849158dd80e5",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1180,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "ca17e0f31e5c9bd8",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "subscribe to all",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 1);\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\nconst floorstr = floor.toString().padStart(2, '0');\n\nfor (let room = 2; room <= 20; room+=2) {\n\n    const roomstr = room.toString().padStart(3, '0');\n\n    const port = 5700 + floorOffset + (room - 1);\n\n    node.send({\n        action: \"subscribe\",\n        topic: `campus/b01/floor_${floorstr}/room_${roomstr}/actuator/#`,\n    });\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 500,
+        "wires": [
+            [
+                "794dd6c193d3a444",
+                "9c9c50a6c41bc118"
+            ]
+        ]
+    },
+    {
+        "id": "27bf3acb16d1c2a3",
+        "type": "inject",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 500,
+        "wires": [
+            [
+                "ca17e0f31e5c9bd8"
+            ]
+        ]
+    },
+    {
+        "id": "9c9c50a6c41bc118",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "topic",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 440,
+        "wires": []
     }
 ]

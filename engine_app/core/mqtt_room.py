@@ -56,7 +56,7 @@ class MQTT_room:
         self.state = state if state is not None else {}
         self._sync_state()
         self.broker = MQTTClient(env["mqtt_host"], env["mqtt_port"], ca_cert=env.get("mqtt_ca_cert"))
-        self.register_hvac_subscription()
+        self.register_actuator_subscriptions()
 
         # Fault state
         self.frozen_temp = None
@@ -92,6 +92,10 @@ class MQTT_room:
         )
 
 
+    def register_actuator_subscriptions(self):
+        self.register_hvac_subscription()
+        self.register_light_dimmer_subscription()
+
     def register_hvac_subscription(self):
         async def handle_hvac_command(topic, payload):
             try:
@@ -120,6 +124,34 @@ class MQTT_room:
 
         self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
         self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
+
+    def register_light_dimmer_subscription(self):
+        async def handle_light_dimmer_command(topic, payload):
+            try:
+                data = json.loads(payload)
+                dimmer_value = int(data["lighting_dimmer"])
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                log.warning("invalid light dimmer command from %s", topic)
+                return
+
+            if not 0 <= dimmer_value <= 100:
+                log.warning("light dimmer out of range for %s: %s", self.id, dimmer_value)
+                return
+
+            self.dimmer = dimmer_value
+            self.refresh_state()
+            command_id = data.get("command_id")
+            await self.broker.publish_json(
+                room_light_dimmer_applied_ack_topic(self.base_topic),
+                {
+                    "room_id": self.id,
+                    "lighting_dimmer": self.dimmer,
+                    "command_id": command_id,
+                },
+            )
+            log.info("room light dimmer updated %s -> %s", self.id, dimmer_value)
+
+        self.broker.subscribe(room_light_dimmer_command_topic(self.base_topic), handle_light_dimmer_command)
 
     def _inject_fault(self):
         if random.random() < self.fault_probability:

@@ -18,6 +18,14 @@ def room_hvac_applied_ack_topic(base_topic):
     return f"{base_topic}/ack/hvac_applied"
 
 
+def room_light_dimmer_command_topic(base_topic):
+    return f"{base_topic}/actuator/light_dimmer"
+
+
+def room_light_dimmer_applied_ack_topic(base_topic):
+    return f"{base_topic}/ack/light_dimmer_applied"
+
+
 def all_room_hvac_applied_ack_topics():
     return "campus/b01/+/+/ack/hvac_applied"
 

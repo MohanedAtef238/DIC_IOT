@@ -11,3 +11,9 @@
 10 verbose logfile /data/.npm/_logs/2026-04-15T00_59_51_403Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
+13 verbose cwd /usr/src/node-red
+14 verbose os Linux 6.6.87.2-microsoft-standard-WSL2
+15 verbose node v20.20.1
+16 verbose npm  v10.8.2
+17 verbose exit 0
+18 info ok

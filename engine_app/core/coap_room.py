@@ -122,6 +122,8 @@ class CoAP_room:
 
         self.hvac_resource = ActuatorResource(self, "hvac")
         self.site.add_resource(['actuator', 'hvac'], self.hvac_resource)
+        self.light_dimmer_resource = ActuatorResource(self, "light_dimmer")
+        self.site.add_resource(['actuator', 'light_dimmer'], self.light_dimmer_resource)
 
     async def apply_hvac_command(self, mode):
         mode = mode.upper()
@@ -132,6 +134,28 @@ class CoAP_room:
         self.hvac = mode
         self.refresh_state()
         log.info("room hvac updated %s -> %s", self.id, mode)
+        return True
+
+    async def apply_light_dimmer_command(self, dimmer):
+        try:
+            dimmer_value = int(dimmer)
+        except (TypeError, ValueError):
+            log.warning("invalid light dimmer for %s: %s", self.id, dimmer)
+            return False
+
+        if not 0 <= dimmer_value <= 100:
+            log.warning("light dimmer out of range for %s: %s", self.id, dimmer_value)
+            return False
+
+        self.dimmer = dimmer_value
+        self.lux = round(self.dimmer / 100 * 1000)
+        if self.occ:
+            self.lux = max(self.lux, self.light_threshold)
+
+        self.refresh_state()
+        self.sensor_resources["light"].updated_state()
+        self.payload_resource.updated_state()
+        log.info("room light dimmer updated %s -> %s", self.id, dimmer_value)
         return True
 
     def _inject_fault(self):
@@ -378,6 +402,15 @@ class ActuatorResource(resource.Resource):
                     body = json.dumps({
                         "room_id": self.room.id,
                         "hvac_mode": self.room.hvac,
+                    }).encode('utf-8')
+                    return aiocoap.Message(code=aiocoap.CHANGED, payload=body, content_format=_JSON_CF)
+            elif self.actuator_name == "light_dimmer":
+                success = await self.room.apply_light_dimmer_command(data.get("lighting_dimmer"))
+                if success:
+                    body = json.dumps({
+                        "room_id": self.room.id,
+                        "lighting_dimmer": self.room.dimmer,
+                        "ambient": self.room.lux,
                     }).encode('utf-8')
                     return aiocoap.Message(code=aiocoap.CHANGED, payload=body, content_format=_JSON_CF)
             return aiocoap.Message(code=aiocoap.BAD_REQUEST)

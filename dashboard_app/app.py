@@ -16,6 +16,11 @@ if ENGINE_APP_PATH not in sys.path:
     sys.path.insert(0, ENGINE_APP_PATH)
 
 from network.mqtt_client import MQTTClient
+from network.topics import (
+    room_base_topic,
+    room_hvac_command_topic,
+    room_light_dimmer_command_topic,
+)
 
 DB_PATH = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
 MQTT_HOST = os.environ.get("MQTT_HOST", "mosquitto")
@@ -69,6 +74,48 @@ def publish_fleet_hvac(mode):
     )
 
 
+def format_room_id(floor, room_num):
+    return f"b01-f{floor:02d}-r{room_num:03d}"
+
+
+def publish_room_hvac(floor, room_num, mode):
+    runtime = get_mqtt_runtime()
+    topic = room_hvac_command_topic(room_base_topic(floor, room_num))
+    runtime.publish_json(
+        topic,
+        {
+            "room_id": format_room_id(floor, room_num),
+            "hvac_mode": mode,
+            "command_id": str(uuid.uuid4()),
+        },
+    )
+    return topic
+
+
+def publish_room_light_dimmer(floor, room_num, dimmer):
+    runtime = get_mqtt_runtime()
+    topic = room_light_dimmer_command_topic(room_base_topic(floor, room_num))
+    runtime.publish_json(
+        topic,
+        {
+            "room_id": format_room_id(floor, room_num),
+            "lighting_dimmer": dimmer,
+            "command_id": str(uuid.uuid4()),
+        },
+    )
+    return topic
+
+
+def parse_room_id(room_id):
+    try:
+        _, floor_segment, room_segment = room_id.split("-")
+        floor = int(floor_segment.lstrip("f"))
+        room_num = int(room_segment.lstrip("r"))
+        return floor, room_num
+    except Exception:
+        return None, None
+
+
 st.set_page_config(page_title="Campus IoT Dashboard", layout="wide")
 st.title("Campus IoT Dashboard")
 st.caption(f"SQLite source: {DB_PATH}")
@@ -83,7 +130,7 @@ def load_rows(db_path):
     try:
         rows = conn.execute(
             """
-            SELECT room_id, last_temp, last_humidity, hvac_mode, target_temp, last_update
+            SELECT room_id, last_temp, last_humidity, hvac_mode, target_temp, lighting_dimmer, last_update
             FROM room_payloads
             ORDER BY room_id
             """
@@ -101,6 +148,7 @@ def load_rows(db_path):
                 "last_humidity": row["last_humidity"],
                 "hvac_mode": row["hvac_mode"],
                 "target_temp": row["target_temp"],
+                "lighting_dimmer": row["lighting_dimmer"],
                 "last_update_utc": last_update,
             }
         )
@@ -123,6 +171,43 @@ rows = load_rows(DB_PATH)
 if not rows:
     st.warning("No room data found yet. Start the engine and wait for a publish cycle.")
     st.stop()
+
+room_options = []
+for row in rows:
+    floor, room_num = parse_room_id(row["room_id"])
+    if floor is not None and room_num is not None:
+        room_options.append((floor, room_num))
+room_options = sorted(set(room_options))
+selected_room = room_options[0] if room_options else (1, 1)
+
+with st.expander("Targeted room control"):
+    selection_col1, selection_col2 = st.columns([2, 3])
+    selected_room = selection_col1.selectbox(
+        "Select room to target",
+        room_options,
+        format_func=lambda r: f"Floor {r[0]:02d} / Room {r[1]:03d}",
+    )
+
+    room_floor, room_num = selected_room
+    target_mode = selection_col2.selectbox("HVAC mode for selected room", VALID_HVAC_MODES, index=0)
+    target_dimmer = selection_col2.slider("Lighting dimmer %", min_value=0, max_value=100, value=75)
+
+    target_hvac_col, target_dimmer_col = st.columns([2, 2])
+    if target_hvac_col.button("Apply HVAC to selected room", use_container_width=True):
+        try:
+            topic = publish_room_hvac(room_floor, room_num, target_mode)
+            st.success(f"Room HVAC command sent to {topic}: {target_mode}")
+            log.info("room hvac command sent to %s: %s", topic, target_mode)
+        except Exception as exc:
+            st.error(f"Failed to publish room HVAC command: {exc}")
+
+    if target_dimmer_col.button("Apply dimmer to selected room", use_container_width=True):
+        try:
+            topic = publish_room_light_dimmer(room_floor, room_num, target_dimmer)
+            st.success(f"Room light dimmer command sent to {topic}: {target_dimmer}%")
+            log.info("room dimmer command sent to %s: %s", topic, target_dimmer)
+        except Exception as exc:
+            st.error(f"Failed to publish room dimmer command: {exc}")
 
 hvac_modes = sorted({row["hvac_mode"] for row in rows})
 selected_modes = st.multiselect("Filter HVAC mode", hvac_modes, default=hvac_modes)
