@@ -65,6 +65,33 @@ services:
       - engine
     restart: unless-stopped
 
+  nodered_master:
+    build:
+      context: .
+      dockerfile: node-red/master/Dockerfile
+    image: dic_iot-nodered_custom:latest
+    container_name: nodered_master
+    entrypoint: ["/usr/src/node-red/start-master.sh"]
+    ports:
+      - "1880:1880"
+    networks:
+      - iot_net
+    volumes:
+      - ./node-red:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Africa/Cairo
+      - NODE_RED_FLOOR_COUNT=10
+      - NODE_RED_WORKER_IMAGE=dic_iot-nodered_custom:latest
+      - NODE_RED_WORKER_PREFIX=nodered_floor
+      - NODE_RED_WORKER_PORT_BASE=1891
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - COAP_HOST=campus_engine
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
 volumes:
   mosquitto_data:
   mosquitto_log:

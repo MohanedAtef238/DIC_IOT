@@ -1,0 +1,224 @@
+[
+    {
+        "id": "6db520c8e77fa5c3",
+        "type": "tab",
+        "label": "Flow 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "75bf69f74513b636",
+        "type": "mqtt-broker",
+        "name": "Mosquitto",
+        "broker": "${MQTT_HOST}",
+        "port": "${MQTT_PORT}",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "751eed6b0c447736",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-coap": "0.8.0"
+        }
+    },
+    {
+        "id": "73b48127bf2649bd",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "901d655a3ea08a83",
+        "type": "coap request",
+        "z": "6db520c8e77fa5c3",
+        "method": "GET",
+        "confirmable": true,
+        "observe": true,
+        "multicast": false,
+        "multicastTimeout": 20000,
+        "url": "",
+        "content-format": "application/json",
+        "raw-buffer": false,
+        "name": "observe payload",
+        "x": 700,
+        "y": 320,
+        "wires": [
+            [
+                "4280949f68b0f07b"
+            ]
+        ]
+    },
+    {
+        "id": "1adfd6869ecd5f84",
+        "type": "inject",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 320,
+        "wires": [
+            [
+                "abb9827f2ba950db"
+            ]
+        ]
+    },
+    {
+        "id": "abb9827f2ba950db",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "observe all function",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 1);\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\nfor (let room = 1; room <= 20; room++) {\n    const port = 5700 + floorOffset + (room - 1);\n    node.send({ url: `coap://${coapHost}:${port}/payload` });\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 320,
+        "wires": [
+            [
+                "901d655a3ea08a83",
+                "9fccc6fddf8f7f58"
+            ]
+        ]
+    },
+    {
+        "id": "4280949f68b0f07b",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "mqtt conversion",
+        "func": "msg.topic = `campus/b01/floor_${msg.payload.metadata.floor}/room_${msg.payload.metadata.room}/payload`\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 320,
+        "wires": [
+            [
+                "80bc2d88ac44be79",
+                "3b22962487d0de80"
+            ]
+        ]
+    },
+    {
+        "id": "80bc2d88ac44be79",
+        "type": "mqtt out",
+        "z": "6db520c8e77fa5c3",
+        "name": "Mqtt out",
+        "topic": "",
+        "qos": "2",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "75bf69f74513b636",
+        "x": 1240,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "9fccc6fddf8f7f58",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "url",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 770,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "3b22962487d0de80",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "topic",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1130,
+        "y": 220,
+        "wires": []
+    }
+]
