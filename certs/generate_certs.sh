@@ -21,18 +21,27 @@ openssl x509 -req -in mosquitto.csr \
     -out mosquitto.crt
 rm -f mosquitto.csr ca.srl
 
-# DTLS pre-shared key
-PSK_B16=$(openssl rand -hex 16 | python3 -c \
+# DTLS pre-shared key 
+PSK_B64=$(openssl rand -hex 16 | python3 -c \
     "import sys,base64; print(base64.b64encode(bytes.fromhex(sys.stdin.read().strip())).decode())")
 cat > dtls_psk.json <<EOF
 {
     "psk_identity": "campus-iot-sensor",
-    "psk_key_b64": "$PSK_B16"
+    "psk_key_b64": "$PSK_B64"
 }
 EOF
 
+# MQTT broker password file for the 'engine' service account
+MQTT_PASS=$(openssl rand -base64 18 | tr -d '/+=')
+docker run --rm \
+    -v "$(cd .. && pwd)/mosquitto/config:/mosquitto/config" \
+    eclipse-mosquitto:2 \
+    sh -c "mosquitto_passwd -b -c /mosquitto/config/passwd engine '$MQTT_PASS'"
+
 ls -lh ca.crt ca.key mosquitto.crt mosquitto.key dtls_psk.json
 
-echo "debugging purposes.."
+echo "--- Copy these into .env ---"
 echo "DTLS_PSK_IDENTITY=campus-iot-sensor"
-echo "DTLS_PSK_KEY_B64=$PSK_B16"
+echo "DTLS_PSK_KEY_B64=$PSK_B64"
+echo "MQTT_USER=engine"
+echo "MQTT_PASS=$MQTT_PASS"

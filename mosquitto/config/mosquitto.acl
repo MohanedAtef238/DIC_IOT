@@ -1,0 +1,11 @@
+# Mosquitto ACL file
+#
+# engine_app — single trusted service account, full access to all campus topics.
+# All 101 MQTT connections from the engine container authenticate as this user.
+user engine
+topic readwrite campus/#
+
+# Client username must follow the pattern "node-<floor_padded>", e.g. "node-01", "node-10".
+# The %u placeholder is substituted with the connecting client's username at match time,
+# so a client authenticated as "node-01" can only touch campus/b01/floor_01/# topics.
+# pattern readwrite campus/b01/floor_%u/#

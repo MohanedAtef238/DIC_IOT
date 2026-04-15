@@ -10,11 +10,11 @@ services:
     image: eclipse-mosquitto:2
     container_name: mosquitto
     ports:
-      - "1883:1883"     # TCP (plain)
+      - "1883:1883"    # TCP (plain)
       - "8883:8883"     # TCP (TLS)
       - "9001:9001"     # WebSocket
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config:/mosquitto/config:ro   # whole dir: conf + passwd + acl
       - ./certs:/mosquitto/certs:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log

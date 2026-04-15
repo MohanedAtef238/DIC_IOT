@@ -1,4 +1,4 @@
-import asyncio, json, logging, ssl
+import asyncio, json, logging, os, ssl
 import aiomqtt
 
 log = logging.getLogger("engine.mqtt")
@@ -21,10 +21,12 @@ def _topic_matches(topic_filter, topic):
 
 
 class MQTTClient:
-    def __init__(self, host, port, ca_cert=None):
+    def __init__(self, host, port, ca_cert=None, username=None, password=None):
         self.host = host
         self.port = port
         self.ca_cert = ca_cert
+        self.username = username or os.environ.get("MQTT_USER")
+        self.password = password or os.environ.get("MQTT_PASS")
         self.queue = asyncio.Queue()
         self.subscriptions = []
 
@@ -66,6 +68,8 @@ class MQTTClient:
                     hostname=self.host,
                     port=self.port,
                     tls_context=tls_ctx,
+                    username=self.username,
+                    password=self.password,
                 ) as c:
                     log.info("broker connected %s:%d tls=%s", self.host, self.port, tls_ctx is not None)
                     try:
