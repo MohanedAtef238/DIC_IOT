@@ -2,6 +2,7 @@
 certs/*.key
 certs/*.crt
 certs/dtls_psk.json
+certs/*.srl
 
 # Environment variables — contains mostly configuration values, not that secretive in this project's scope
 

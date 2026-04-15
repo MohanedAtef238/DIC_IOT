@@ -31,6 +31,8 @@ def get_env():
     conf["sqlite_db_path"] = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
     conf["publish_interval"] = int(os.environ.get("PUBLISH_INTERVAL",5))
     conf["mqtt_ca_cert"] = os.environ.get("MQTT_CA_CERT")  # None = plain TCP
+    conf["mqtt_client_cert"] = os.environ.get("MQTT_CLIENT_CERT")  # client cert for mTLS
+    conf["mqtt_client_key"] = os.environ.get("MQTT_CLIENT_KEY")    # client key for mTLS
     conf["coap_dtls_enabled"] = os.environ.get("COAP_DTLS_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
     conf["dtls_psk"] = None
     if not conf["coap_dtls_enabled"]:
@@ -78,7 +80,12 @@ async def run_engine():
 
     all_rooms = mqtt_rooms + coap_rooms
 
-    engine_broker = MQTTClient(env["mqtt_host"], env["mqtt_port"], ca_cert=env["mqtt_ca_cert"])
+    engine_broker = MQTTClient(
+        env["mqtt_host"], env["mqtt_port"],
+        ca_cert=env["mqtt_ca_cert"],
+        client_cert=env.get("mqtt_client_cert"),
+        client_key=env.get("mqtt_client_key"),
+    )
     state_flush_event = asyncio.Event()
     pending_fleet_acks = {}
     # Only MQTT rooms send applied-ack messages back over the broker.
