@@ -34,7 +34,8 @@ class MQTTClient:
     def __init__(self, host, port, ca_cert=None,
                  client_cert=None, client_key=None,
                  username=None, password=None,
-                 expected_floor=None):
+                 expected_floor=None,
+                 will=None):
         self.host = host
         self.port = port
         self.ca_cert = ca_cert
@@ -44,6 +45,7 @@ class MQTTClient:
         self.password = password or os.environ.get("MQTT_PASS")
         # If set, inbound messages are checked: topic floor must match this value.
         self.expected_floor = expected_floor
+        self.will = will
         self.queue = asyncio.Queue()
         self.subscriptions = []
 
@@ -103,6 +105,7 @@ class MQTTClient:
                     tls_context=tls_ctx,
                     username=self.username,
                     password=self.password,
+                    will=self.will,
                 ) as c:
                     log.info(
                         "broker connected %s:%d tls=%s mtls=%s",

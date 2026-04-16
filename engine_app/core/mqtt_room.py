@@ -4,6 +4,7 @@ import logging
 import random
 import time
 import psutil  # For CPU and memory usage
+import aiomqtt
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
 from network.topics import *
@@ -55,12 +56,21 @@ class MQTT_room:
             self.lux = round(self.dimmer / 100 * 1000)
         self.state = state if state is not None else {}
         self._sync_state()
+
+        lwt = aiomqtt.Will(
+            topic=room_lwt_topic(self.base_topic),
+            payload=json.dumps({"client_id": self.id}).encode(),
+            qos=1,
+            retain=True
+        )
+
         self.broker = MQTTClient(
             env["mqtt_host"], env["mqtt_port"],
             ca_cert=env.get("mqtt_ca_cert"),
             client_cert=env.get("mqtt_client_cert"),
             client_key=env.get("mqtt_client_key"),
             expected_floor=f"{floor:02d}",
+            will=lwt
         )
         self.register_actuator_subscriptions()
 
