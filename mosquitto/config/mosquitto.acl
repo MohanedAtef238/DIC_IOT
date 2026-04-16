@@ -15,6 +15,21 @@ topic readwrite campus/b01/floor_04/#
 user 05
 topic readwrite campus/b01/floor_05/#
 
+user 06
+topic readwrite campus/b01/floor_06/#
+
+user 07
+topic readwrite campus/b01/floor_07/#
+
+user 08
+topic readwrite campus/b01/floor_08/#
+
+user 09
+topic readwrite campus/b01/floor_09/#
+
+user 10
+topic readwrite campus/b01/floor_10/#
+
 # engine_app — single trusted service account, full access to all campus topics.
 # All 101 MQTT connections from the engine container authenticate as this user.
 user engine

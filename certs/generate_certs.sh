@@ -45,7 +45,7 @@ generate_client_cert() {
 generate_client_cert "engine"
 
 # Per-floor client certs — CN matches floor number for pattern ACL
-for floor in 01 02 03 04 05; do
+for floor in 01 02 03 04 05 06 07 08 09 10; do
     generate_client_cert "$floor"
 done
 
@@ -62,7 +62,7 @@ docker run --rm \
 echo ""
 echo "=== Generated certificates ==="
 ls -lh ca.crt ca.key mosquitto.crt mosquitto.key engine.crt engine.key dtls_psk.json
-for floor in 01 02 03 04 05; do
+for floor in 01 02 03 04 05 06 07 08 09 10; do
     ls -lh ${floor}.crt ${floor}.key
 done
 
