@@ -426,5 +426,56 @@
                 "file": "/usr/src/node-red/node_modules/@node-red/nodes/core/storage/23-watch.js"
             }
         }
+    },
+    "node-red-contrib-coap": {
+        "name": "node-red-contrib-coap",
+        "version": "0.8.0",
+        "local": false,
+        "user": false,
+        "nodes": {
+            "coap-in": {
+                "name": "coap-in",
+                "types": [
+                    "coap-server",
+                    "coap in",
+                    "coap response"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-coap",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-coap/coap/coap-in.js"
+            },
+            "coap-request": {
+                "name": "coap-request",
+                "types": [
+                    "coap request"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-coap",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-coap/coap/coap-request.js"
+            }
+        }
+    },
+    "node-red-contrib-thingsboard-gateway": {
+        "name": "node-red-contrib-thingsboard-gateway",
+        "version": "1.0.1",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "gateway-out": {
+                "name": "gateway-out",
+                "types": [
+                    "network"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-thingsboard-gateway",
+                "file": "/data/node_modules/node-red-contrib-thingsboard-gateway/nodes/gateway_out.js"
+            }
+        }
     }
 }
