@@ -4,6 +4,7 @@ certs/*.crt
 certs/dtls_psk.json
 node_modules
 .npm
+certs/*.srl
 
 # Environment variables — contains mostly configuration values, not that secretive in this project's scope
 

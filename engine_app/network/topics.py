@@ -39,3 +39,6 @@ def fleet_hvac_command_topic():
 
 def room_heartbeat():
     return "campus/b01/health"
+
+def room_lwt_topic(base_topic):
+    return f"{base_topic}/lwt"
