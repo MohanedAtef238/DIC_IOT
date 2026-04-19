@@ -156,7 +156,8 @@
         "y": 320,
         "wires": [
             [
-                "4280949f68b0f07b"
+                "4280949f68b0f07b",
+                "640523f04dce4820"
             ]
         ]
     },
@@ -201,7 +202,7 @@
         "initialize": "",
         "finalize": "const timers = context.get('timers') || [];\ntimers.forEach(t => clearTimeout(t));\ncontext.set('timers', []);",
         "libs": [],
-        "x": 430,
+        "x": 420,
         "y": 320,
         "wires": [
             [
@@ -311,7 +312,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 3",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -378,7 +379,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 4",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -453,10 +454,125 @@
         ]
     },
     {
-        "id": "worker_telemetry_debug",
+        "id": "a6cc64f81a7c30db",
+        "type": "inject",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 680,
+        "wires": [
+            [
+                "22e26c359a3d010d"
+            ]
+        ]
+    },
+    {
+        "id": "640523f04dce4820",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "accumulate for average",
+        "func": "let rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0\n}));\n\nlet curr_room = (msg.payload.metadata.room - 1)%20;\nrooms[curr_room].count++;\nrooms[curr_room].temp_sum+=msg.payload.sensors.temperature;\n\nflow.set(\"rooms\",rooms);\n\nmsg.payload = rooms[curr_room];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 680,
+        "wires": [
+            [
+                "062fdea63fb0f04e"
+            ]
+        ]
+    },
+    {
+        "id": "ee8043c0beba5ba1",
+        "type": "inject",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "60",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 840,
+        "wires": [
+            [
+                "e6119e4f8424d0b6"
+            ]
+        ]
+    },
+    {
+        "id": "e6119e4f8424d0b6",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "function 2",
+        "func": "let rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0\n}));\n\nfor (let i = 0; i < 20; i++) {\n    let room = rooms[i];\n\n    let avg = room.count > 0 ? room.temp_sum / room.count : 0;\n\n    node.send({\n        payload: {\n            room: i + 1,\n            average: avg\n        }\n    });\n}\nflow.set(\"rooms\",undefined);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 840,
+        "wires": [
+            [
+                "d58541e2b69a6d99"
+            ]
+        ]
+    },
+    {
+        "id": "d58541e2b69a6d99",
         "type": "debug",
         "z": "6db520c8e77fa5c3",
-        "name": "floor telemetry debug",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 650,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "062fdea63fb0f04e",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 5",
         "active": false,
         "tosidebar": true,
         "console": false,

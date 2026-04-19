@@ -156,7 +156,8 @@
         "y": 320,
         "wires": [
             [
-                "4280949f68b0f07b"
+                "4280949f68b0f07b",
+                "640523f04dce4820"
             ]
         ]
     },
@@ -201,7 +202,7 @@
         "initialize": "",
         "finalize": "const timers = context.get('timers') || [];\ntimers.forEach(t => clearTimeout(t));\ncontext.set('timers', []);",
         "libs": [],
-        "x": 430,
+        "x": 420,
         "y": 320,
         "wires": [
             [
@@ -311,7 +312,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 3",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -378,7 +379,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 4",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
