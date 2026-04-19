@@ -93,6 +93,7 @@ function desiredEnv(floor) {
     `MQTT_HOST=${process.env.MQTT_HOST || "mosquitto"}`,
     `MQTT_PORT=${process.env.MQTT_PORT || "8883"}`,
     `COAP_HOST=${process.env.COAP_HOST || "campus_engine"}`,
+    `NODE_OPTIONS=${process.env.NODE_OPTIONS || ""}`,
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
   ];
@@ -171,6 +172,8 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       PortBindings: {
         "1880/tcp": [{ HostPort: String(portBase + floor - 1) }],
       },
+      Memory: 1024 * 1024 * 1024, // 1GB
+      MemorySwap: 1024 * 1024 * 1024,
     },
     NetworkingConfig: {
       EndpointsConfig: {

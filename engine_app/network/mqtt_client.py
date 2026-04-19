@@ -4,8 +4,8 @@ import aiomqtt
 log = logging.getLogger("engine.mqtt")
 
 # Regex to extract the floor number from a standard campus topic.
-# e.g. "campus/b01/floor_03/room_005/payload" → "03"
-_FLOOR_RE = re.compile(r"campus/b\d+/floor_(\d+)/")
+# e.g. "campus/b01/f03/r005/telemetry" -> "03"
+_FLOOR_RE = re.compile(r"campus/b\d+/f(\d+)/")
 
 
 def _topic_matches(topic_filter, topic):

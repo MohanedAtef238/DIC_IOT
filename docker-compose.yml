@@ -1,4 +1,4 @@
-﻿# Campus IoT - Docker Compose
+# Campus IoT - Docker Compose
 # Spins up:
 #   1. Eclipse Mosquitto (MQTT broker)
 #   2. campus_engine     (Python simulation engine)
@@ -10,11 +10,11 @@ services:
     image: eclipse-mosquitto:2
     container_name: mosquitto
     ports:
-      - "1883:1883"    # TCP (plain)
-      - "8883:8883"     # TCP (TLS)
-      - "9001:9001"     # WebSocket
+      - "1883:1883" # TCP (plain)
+      - "8883:8883" # TCP (TLS)
+      - "9001:9001" # WebSocket
     volumes:
-      - ./mosquitto/config:/mosquitto/config:ro   # whole dir: conf + passwd + acl
+      - ./mosquitto/config:/mosquitto/config:ro # whole dir: conf + passwd + acl
       - ./certs:/mosquitto/certs:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
@@ -22,7 +22,7 @@ services:
       - iot_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-p", "1883", "-t", "healthcheck", "-m", "ping"]
+      test: [ "CMD", "mosquitto_pub", "-h", "localhost", "-p", "1883", "-t", "healthcheck", "-m", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -77,7 +77,7 @@ services:
     container_name: nodered_master
     init: true
     stop_grace_period: 30s
-    entrypoint: ["/usr/src/node-red/start-master.sh"]
+    entrypoint: [ "/usr/src/node-red/start-master.sh" ]
     ports:
       - "1880:1880"
     networks:
@@ -87,21 +87,28 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./certs:/certs:ro
     environment:
-      - TZ=Africa/Cairo
-      - NODE_RED_FLOOR_COUNT=10
-      - NODE_RED_WORKER_IMAGE=dic_iot-nodered_custom:latest
-      - NODE_RED_WORKER_PREFIX=nodered_floor
-      - NODE_RED_WORKER_PORT_BASE=1891
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=8883
-
-      - COAP_HOST=campus_engine
+      TZ: Africa/Cairo
+      NODE_RED_FLOOR_COUNT: 10
+      NODE_RED_WORKER_IMAGE: dic_iot-nodered_custom:latest
+      NODE_RED_WORKER_PREFIX: nodered_floor
+      NODE_RED_WORKER_PORT_BASE: 1891
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 8883
+      NODE_OPTIONS: --max-old-space-size=2048
+      COAP_HOST: campus_engine
+      FLOOR_NUMBER: 0
+      TB_ACCESS_TOKEN: Rrjyib4qgEX7UN0Tr61m
+    deploy:
+      resources:
+        limits:
+          memory: 3G
     depends_on:
       - mosquitto
       - engine
     restart: unless-stopped
 
   mytb:
+    container_name: mytb
     restart: always
     image: thingsboard/tb-postgres
     ports:
@@ -111,52 +118,56 @@ services:
       - "5683-5688:5683-5688/udp"
     environment:
       TB_QUEUE_TYPE: in-memory
+      JAVA_OPTS: "-Xms2G -Xmx4G"
+    deploy:
+      resources:
+        limits:
+          memory: 6G
     networks:
       - iot_net
-    depends_on:
-      - mosquitto 
     volumes:
       - ~/.mytb-data:/data
       - ~/.mytb-logs:/var/log/thingsboard
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "(echo > /dev/tcp/localhost/8080) >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
   tb-gateway:
     image: thingsboard/tb-gateway:3.7-stable
     container_name: tb-gateway
     restart: always
 
-    # Ports bindings - required by some connectors
     ports:
-        - "5000:5000" # Comment if you don't use REST connector and change if you use another port
-        # Uncomment and modify the following ports based on connector usage:
-#        - "1052:1052" # BACnet connector
-#        - "5026:5026" # Modbus TCP connector (Modbus Slave)
-#        - "50000:50000/tcp" # Socket connector with type TCP
-#        - "50000:50000/udp" # Socket connector with type UDP
+      - "5000:5000" # REST connector
 
-    # Necessary mapping for Linux
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-    # Environment variables
     environment:
       - host=mytb
       - port=1883
-      - accessToken=6Uq9dZnyZiSQWo1UBPiD
-    # Volumes bind
+      - accessToken=Rrjyib4qgEX7UN0Tr61m
     volumes:
-      - tb-gw-config:/thingsboard_gateway/config
       - tb-gw-logs:/thingsboard_gateway/logs
+      - tb-gw-extensions:/thingsboard_gateway/extensions
       - ./certs:/certs:ro
+      - ./tb-gateway-mapping.json:/thingsboard_gateway/config/mqtt.json
+      - ./tb-gateway-config.json:/thingsboard_gateway/config/tb_gateway.json
     depends_on:
-      - mosquitto
-      - mytb
+      mosquitto:
+        condition: service_healthy
+      mytb:
+        condition: service_healthy
     networks:
-      - iot_net 
+      - iot_net
 volumes:
   mosquitto_data:
   mosquitto_log:
   engine_data:
-  tb-gw-config:
-    name: tb-gw-config
   tb-gw-logs:
     name: tb-gw-logs
   tb-gw-extensions:

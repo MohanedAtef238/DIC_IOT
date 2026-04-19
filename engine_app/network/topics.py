@@ -1,9 +1,9 @@
 def room_base_topic(floor, room_num):
-    return f"campus/b01/floor_{floor:02d}/room_{room_num:03d}"
+    return f"campus/b01/f{floor:02d}/r{room_num:03d}"
 
 
 def room_payload_topic(base_topic):
-    return f"{base_topic}/payload"
+    return f"{base_topic}/telemetry"
 
 
 def room_sensor_topic(base_topic, sensor_name):
@@ -11,7 +11,10 @@ def room_sensor_topic(base_topic, sensor_name):
 
 
 def room_hvac_command_topic(base_topic):
-    return f"{base_topic}/actuator/hvac"
+    # Extracts the b01/fXX/rXXX from the base topic and formats it as a flat deviceName
+    parts = base_topic.split('/')
+    device_name = f"{parts[1]}-{parts[2]}-{parts[3]}"
+    return f"campus/b01/cmd/{device_name}"
 
 
 def room_hvac_applied_ack_topic(base_topic):

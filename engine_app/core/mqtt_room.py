@@ -3,7 +3,6 @@ import json
 import logging
 import random
 import time
-import psutil  # For CPU and memory usage
 import aiomqtt
 from network.mqtt_client import MQTTClient
 from utils.temperature_calculator import calc_temp
@@ -25,14 +24,6 @@ class MQTT_room:
         self.outside = env["outside_temp"]
         self.interval = env["publish_interval"]
         self.fault_probability = env.get("fault_probability", 0.01)  # 1% chance of fault per tick
-
-        # Performance metrics
-        self.performance_metrics = {
-            "tick_duration": [],
-            "event_loop_latency": [],
-            "cpu_usage": [],
-            "memory_usage": [],
-        }
 
         # sensor readings, the defaults at least.
         self.temp = 22.0
@@ -227,23 +218,17 @@ class MQTT_room:
 
     def payload(self):
         return {
-            "metadata": {
-                "sensor_id": self.id,
-                "building": "b01",
-                "floor": self.floor,
-                "room": self.room_num,
-                "timestamp": int(time.time()),
-            },
-            "sensors": {
-                "temperature": self.temp,
-                "humidity": self.humidity,
-                "occupancy": self.occ,
-                "light_level": self.lux,
-            },
-            "actuators": {
-                "hvac_mode": self.hvac.lower(),
-                "lighting_dimmer": self.dimmer,
-            },
+            "deviceName": self.id,
+            "building": "b01",
+            "floor": str(self.floor),
+            "room": str(self.room_num),
+            "timestamp": int(time.time()),
+            "temperature": self.temp,
+            "humidity": self.humidity,
+            "occupancy": self.occ,
+            "light_level": self.lux,
+            "hvac_mode": self.hvac.lower(),
+            "lighting_dimmer": self.dimmer,
         }
 
     def sensor_messages(self):
@@ -260,47 +245,12 @@ class MQTT_room:
         # Random stagger to avoid thundering herd
         await asyncio.sleep(random.uniform(0, self.interval))
 
+
         while True:
-            tick_start = time.perf_counter()
             self.tick()
-            tick_end = time.perf_counter()
-            tick_duration_ms = (tick_end - tick_start) * 1000.0
-            self.performance_metrics["tick_duration"].append(tick_duration_ms)
-
-            # Measure CPU and memory usage
-            cpu_usage = psutil.cpu_percent(interval=None)
-            memory_usage = psutil.virtual_memory().percent
-            self.performance_metrics["cpu_usage"].append(cpu_usage)
-            self.performance_metrics["memory_usage"].append(memory_usage)
-
-            # Log performance metrics every 10 ticks
-            if len(self.performance_metrics["tick_duration"]) % 10 == 0:
-                avg_tick_duration = sum(self.performance_metrics["tick_duration"][-10:]) / 10
-                avg_cpu_usage = sum(self.performance_metrics["cpu_usage"][-10:]) / 10
-                avg_memory_usage = sum(self.performance_metrics["memory_usage"][-10:]) / 10
-                log.info(
-                    f"Performance metrics for {self.id}: "
-                    f"Avg tick duration: {avg_tick_duration:.4f}ms, "
-                    f"Avg CPU usage: {avg_cpu_usage:.2f}%, "
-                    f"Avg memory usage: {avg_memory_usage:.2f}%"
-                )
-
-            # if self.fault_active and self.fault_type == "telemetry_delay":
-            #     await asyncio.sleep(random.uniform(1, 5))  # Delay telemetry
-            # elif self.fault_active and self.fault_type == "node_dropout":
-            #     await asyncio.sleep(self.interval)  # Skip publishing
-            #     continue
 
             for topic, payload in self.sensor_messages():
                 await self.broker.publish_json(topic, payload)
                 
             await self.publish_heartbeat()
-            if self.room_num==7 and self.floor==3:
-                await asyncio.sleep(40)
-
-            # Calculate event loop latency
-            loop_latency = time.perf_counter() - tick_start
-            loop_latency_ms = loop_latency * 1000.0
-            self.performance_metrics["event_loop_latency"].append(loop_latency_ms)
-
-            await asyncio.sleep(max(0, self.interval - loop_latency))
+            await asyncio.sleep(self.interval)

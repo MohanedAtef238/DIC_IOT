@@ -477,5 +477,101 @@
                 "file": "/data/node_modules/node-red-contrib-thingsboard-gateway/nodes/gateway_out.js"
             }
         }
+    },
+    "node-red-contrib-mobius-flow-thingsboard": {
+        "name": "node-red-contrib-mobius-flow-thingsboard",
+        "version": "2.3.0",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "mobius thingsboard connection": {
+                "name": "mobius thingsboard connection",
+                "types": [
+                    "mobius thingsboard connection"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/nodes/connection-manager.js"
+            },
+            "mobius thingsboard manager": {
+                "name": "mobius thingsboard manager",
+                "types": [
+                    "mobius thingsboard manager"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/nodes/thingsboard-manager.js"
+            },
+            "mobius thingsboard device publish": {
+                "name": "mobius thingsboard device publish",
+                "types": [
+                    "mobius thingsboard device publish"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/nodes/thingsboard-device-publish.js"
+            },
+            "mobius thingsboard attribute subscribe": {
+                "name": "mobius thingsboard attribute subscribe",
+                "types": [
+                    "mobius thingsboard attribute subscribe"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/nodes/thingsboard-attribute-subscribe.js"
+            },
+            "mobius thingsboard connection v2": {
+                "name": "mobius thingsboard connection v2",
+                "types": [
+                    "mobius thingsboard connection v2"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/v2/nodes/connection-manager-v2.js"
+            },
+            "mobius thingsboard provision": {
+                "name": "mobius thingsboard provision",
+                "types": [
+                    "mobius thingsboard provision"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/v2/nodes/thingsboard-provision.js"
+            },
+            "mobius thingsboard publish": {
+                "name": "mobius thingsboard publish",
+                "types": [
+                    "mobius thingsboard publish"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/v2/nodes/thingsboard-publish.js"
+            },
+            "mobius thingsboard subscribe": {
+                "name": "mobius thingsboard subscribe",
+                "types": [
+                    "mobius thingsboard subscribe"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mobius-flow-thingsboard",
+                "file": "/data/node_modules/node-red-contrib-mobius-flow-thingsboard/dist/v2/nodes/thingsboard-subscribe.js"
+            }
+        }
     }
 }

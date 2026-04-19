@@ -1,34 +1,44 @@
 # Mosquitto ACL file
 
 user 01
-topic readwrite campus/b01/floor_01/#
+topic readwrite campus/b01/f01/#
+topic read campus/b01/cmd/#
 
 user 02
-topic readwrite campus/b01/floor_02/#
+topic readwrite campus/b01/f02/#
+topic read campus/b01/cmd/#
 
 user 03
-topic readwrite campus/b01/floor_03/#
+topic readwrite campus/b01/f03/#
+topic read campus/b01/cmd/#
 
 user 04
-topic readwrite campus/b01/floor_04/#
+topic readwrite campus/b01/f04/#
+topic read campus/b01/cmd/#
 
 user 05
-topic readwrite campus/b01/floor_05/#
+topic readwrite campus/b01/f05/#
+topic read campus/b01/cmd/#
 
 user 06
-topic readwrite campus/b01/floor_06/#
+topic readwrite campus/b01/f06/#
+topic read campus/b01/cmd/#
 
 user 07
-topic readwrite campus/b01/floor_07/#
+topic readwrite campus/b01/f07/#
+topic read campus/b01/cmd/#
 
 user 08
-topic readwrite campus/b01/floor_08/#
+topic readwrite campus/b01/f08/#
+topic read campus/b01/cmd/#
 
 user 09
-topic readwrite campus/b01/floor_09/#
+topic readwrite campus/b01/f09/#
+topic read campus/b01/cmd/#
 
 user 10
-topic readwrite campus/b01/floor_10/#
+topic readwrite campus/b01/f10/#
+topic read campus/b01/cmd/#
 
 # engine_app — single trusted service account, full access to all campus topics.
 # All 101 MQTT connections from the engine container authenticate as this user.
