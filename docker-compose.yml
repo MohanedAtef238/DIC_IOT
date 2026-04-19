@@ -54,9 +54,13 @@ services:
     environment:
       - SQLITE_DB_PATH=/data/campus.db
       - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
+      - MQTT_PORT=8883
+      - MQTT_CA_CERT=/certs/ca.crt
+      - MQTT_CLIENT_CERT=/certs/engine.crt
+      - MQTT_CLIENT_KEY=/certs/engine.key
     volumes:
       - engine_data:/data:ro
+      - ./certs:/certs:ro
     ports:
       - "8501:8501"
     networks:
@@ -71,6 +75,8 @@ services:
       dockerfile: node-red/master/Dockerfile
     image: dic_iot-nodered_custom:latest
     container_name: nodered_master
+    init: true
+    stop_grace_period: 30s
     entrypoint: ["/usr/src/node-red/start-master.sh"]
     ports:
       - "1880:1880"
@@ -79,6 +85,7 @@ services:
     volumes:
       - ./node-red:/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./certs:/certs:ro
     environment:
       - TZ=Africa/Cairo
       - NODE_RED_FLOOR_COUNT=10
@@ -86,10 +93,12 @@ services:
       - NODE_RED_WORKER_PREFIX=nodered_floor
       - NODE_RED_WORKER_PORT_BASE=1891
       - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
+      - MQTT_PORT=8883
+
       - COAP_HOST=campus_engine
     depends_on:
       - mosquitto
+      - engine
     restart: unless-stopped
 
   mytb:

@@ -71,12 +71,14 @@ async def run_engine():
     # Pairs are created together: MQTT at rm, CoAP at rm+1.
     mqtt_rooms = []
     coap_rooms = []
+    room_counter = 1
     for fl in range(1, nfloors + 1):
-        for rm in range(1, nrooms, 2):
-            mqtt_id = f"b01-f{fl:02d}-r{rm:03d}"
-            coap_id = f"b01-f{fl:02d}-r{rm+1:03d}"
-            mqtt_rooms.append(MQTT_room(fl, rm,     env, state=saved_states.get(mqtt_id)))
-            coap_rooms.append(CoAP_room(fl, rm + 1, env, state=saved_states.get(coap_id)))
+        for _ in range(1, nrooms, 2):
+            mqtt_id = f"b01-f{fl:02d}-r{room_counter:03d}"
+            coap_id = f"b01-f{fl:02d}-r{room_counter+1:03d}"
+            mqtt_rooms.append(MQTT_room(fl, room_counter,     env, state=saved_states.get(mqtt_id)))
+            coap_rooms.append(CoAP_room(fl, room_counter + 1, env, state=saved_states.get(coap_id)))
+            room_counter += 2
 
     all_rooms = mqtt_rooms + coap_rooms
 

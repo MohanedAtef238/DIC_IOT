@@ -8,11 +8,19 @@
         "env": []
     },
     {
-        "id": "75bf69f74513b636",
+        "id": "751eed6b0c447736",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-coap": "0.8.0"
+        }
+    },
+    {
+        "id": "73b48127bf2649bd",
         "type": "mqtt-broker",
-        "name": "Mosquitto",
-        "broker": "${MQTT_HOST}",
-        "port": "${MQTT_PORT}",
+        "name": "",
+        "broker": "",
+        "port": 1883,
         "clientid": "",
         "autoConnect": true,
         "usetls": false,
@@ -39,22 +47,29 @@
         "sessionExpiry": ""
     },
     {
-        "id": "751eed6b0c447736",
-        "type": "global-config",
-        "env": [],
-        "modules": {
-            "node-red-contrib-coap": "0.8.0"
-        }
+        "id": "789d4c41cb2d2dfb",
+        "type": "tls-config",
+        "name": "",
+        "cert": "/certs/engine.crt",
+        "key": "/certs/engine.key",
+        "ca": "/certs/ca.crt",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": true,
+        "alpnprotocol": ""
     },
     {
-        "id": "73b48127bf2649bd",
+        "id": "75bf69f74513b636",
         "type": "mqtt-broker",
-        "name": "",
-        "broker": "",
-        "port": 1883,
+        "name": "Mosquitto",
+        "broker": "${MQTT_HOST}",
+        "port": "8883",
+        "tls": "789d4c41cb2d2dfb",
         "clientid": "",
         "autoConnect": true,
-        "usetls": false,
+        "usetls": true,
         "protocolVersion": 4,
         "keepalive": 60,
         "cleansession": true,
@@ -264,7 +279,7 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "subscribe to all",
-        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 1);\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\nconst floorstr = floor.toString().padStart(2, '0');\n\nfor (let room = 2; room <= 20; room+=2) {\n\n    const roomstr = room.toString().padStart(3, '0');\n\n    const port = 5700 + floorOffset + (room - 1);\n\n    node.send({\n        action: \"subscribe\",\n        topic: `campus/b01/floor_${floorstr}/room_${roomstr}/actuator/#`,\n    });\n}\n\nreturn null;",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 1);\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\nconst floorstr = floor.toString().padStart(2, '0');\n\nfor (let room = 2; room <= 20; room+=2) {\n\n    const roomstr = (floorOffset + room).toString().padStart(3, '0');\n\n    const port = 5700 + floorOffset + (room - 1);\n\n    node.send({\n        action: \"subscribe\",\n        topic: `campus/b01/floor_${floorstr}/room_${roomstr}/actuator/#`,\n    });\n}\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,

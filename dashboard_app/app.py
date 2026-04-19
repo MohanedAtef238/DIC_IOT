@@ -24,7 +24,10 @@ from network.topics import (
 
 DB_PATH = os.environ.get("SQLITE_DB_PATH", "/data/campus.db")
 MQTT_HOST = os.environ.get("MQTT_HOST", "mosquitto")
-MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "8883"))
+MQTT_CA_CERT = os.environ.get("MQTT_CA_CERT")
+MQTT_CLIENT_CERT = os.environ.get("MQTT_CLIENT_CERT")
+MQTT_CLIENT_KEY = os.environ.get("MQTT_CLIENT_KEY")
 FLEET_HVAC_TOPIC = "campus/b01/actuator/hvac"
 VALID_HVAC_MODES = ["OFF", "ECO", "ON"]
 
@@ -33,8 +36,10 @@ log = logging.getLogger("dashboard")
 
 
 class DashboardMQTTRuntime:
-    def __init__(self, host, port):
-        self._broker = MQTTClient(host, port)
+    def __init__(self, host, port, ca_cert=None, client_cert=None, client_key=None):
+        self._broker = MQTTClient(
+            host, port, ca_cert=ca_cert, client_cert=client_cert, client_key=client_key
+        )
         self._loop = asyncio.new_event_loop()
         self._ready = threading.Event()
         self._thread = threading.Thread(target=self._thread_main, daemon=True)
@@ -61,7 +66,13 @@ class DashboardMQTTRuntime:
 
 @st.cache_resource
 def get_mqtt_runtime():
-    runtime = DashboardMQTTRuntime(MQTT_HOST, MQTT_PORT)
+    runtime = DashboardMQTTRuntime(
+        MQTT_HOST,
+        MQTT_PORT,
+        ca_cert=MQTT_CA_CERT,
+        client_cert=MQTT_CLIENT_CERT,
+        client_key=MQTT_CLIENT_KEY,
+    )
     atexit.register(runtime.close)
     return runtime
 

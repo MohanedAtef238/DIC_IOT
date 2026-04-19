@@ -57,6 +57,21 @@ async function getOwnDataSource() {
   return mount.Source;
 }
 
+async function getOwnCertsSource() {
+  const selfId = process.env.HOSTNAME;
+  if (!selfId) {
+    throw new Error("HOSTNAME is not available; cannot inspect the master container");
+  }
+
+  const info = await docker.getContainer(selfId).inspect();
+  const mount = (info.Mounts || []).find((item) => item.Destination === "/certs");
+  if (!mount || !mount.Source) {
+    throw new Error("nodered_master does not have a /certs source mount");
+  }
+
+  return mount.Source;
+}
+
 async function ensureVolume(name) {
   try {
     await docker.getVolume(name).inspect();
@@ -76,7 +91,7 @@ function desiredEnv(floor) {
     `TZ=${process.env.TZ || "Africa/Cairo"}`,
     `FLOOR_NUMBER=${floor}`,
     `MQTT_HOST=${process.env.MQTT_HOST || "mosquitto"}`,
-    `MQTT_PORT=${process.env.MQTT_PORT || "1883"}`,
+    `MQTT_PORT=${process.env.MQTT_PORT || "8883"}`,
     `COAP_HOST=${process.env.COAP_HOST || "campus_engine"}`,
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
@@ -106,7 +121,26 @@ async function recreateContainer(existing, createOptions) {
   await replacement.start();
 }
 
-async function ensureWorker(networkName, image, prefix, floorCount, portBase, floor, sharedDataSource) {
+async function stopWorkers() {
+  console.log("[bootstrap] stopping and removing all floor workers...");
+  const containers = await docker.listContainers({
+    all: true,
+    filters: JSON.stringify({ label: ["dic_iot.managed-by=nodered_master"] })
+  });
+
+  await Promise.all(containers.map(async (info) => {
+    try {
+      const container = docker.getContainer(info.Id);
+      console.log(`[bootstrap] removing container ${info.Names[0]}...`);
+      await container.remove({ force: true });
+    } catch (error) {
+      console.error(`[bootstrap] error removing ${info.Names[0]}:`, error.message);
+    }
+  }));
+  console.log("[bootstrap] all floor workers removed.");
+}
+
+async function ensureWorker(networkName, image, prefix, floorCount, portBase, floor, sharedDataSource, sharedCertsSource) {
   const floorTag = padFloor(floor);
   const name = `${prefix}_${floorTag}`;
   const volumeName = `${prefix}_${floorTag}_data`;
@@ -131,6 +165,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       Binds: [
         `${volumeName}:/data`,
         `${sharedDataSource}:/shared:ro`,
+        `${sharedCertsSource}:/certs:ro`,
       ],
       RestartPolicy: { Name: "unless-stopped" },
       PortBindings: {
@@ -154,7 +189,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       info.Config.Image !== image ||
       !hasEnv(info.Config.Env, "FLOOR_NUMBER", String(floor)) ||
       !hasEnv(info.Config.Env, "MQTT_HOST", process.env.MQTT_HOST || "mosquitto") ||
-      !hasEnv(info.Config.Env, "MQTT_PORT", process.env.MQTT_PORT || "1883") ||
+      !hasEnv(info.Config.Env, "MQTT_PORT", process.env.MQTT_PORT || "8883") ||
       !hasEnv(info.Config.Env, "COAP_HOST", process.env.COAP_HOST || "campus_engine") ||
       !hasEnv(info.Config.Env, "FLOW_SOURCE", "/shared/flows.json") ||
       !hasEnv(info.Config.Env, "FLOW_TARGET", "/data/flows.json") ||
@@ -186,18 +221,24 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
 }
 
 async function main() {
+  if (process.argv[2] === "stop") {
+    await stopWorkers();
+    return;
+  }
+
   const floorCount = envInt("NODE_RED_FLOOR_COUNT", 10);
   const portBase = envInt("NODE_RED_WORKER_PORT_BASE", 1881);
   const image = process.env.NODE_RED_WORKER_IMAGE || "nodered/node-red:latest";
   const prefix = process.env.NODE_RED_WORKER_PREFIX || "nodered_floor";
   const networkName = await getOwnNetworkName();
   const sharedDataSource = await getOwnDataSource();
+  const sharedCertsSource = await getOwnCertsSource();
 
   console.log(`[bootstrap] network=${networkName} floors=${floorCount} image=${image}`);
   await ensureImage(image);
 
   for (let floor = 1; floor <= floorCount; floor += 1) {
-    await ensureWorker(networkName, image, prefix, floorCount, portBase, floor, sharedDataSource);
+    await ensureWorker(networkName, image, prefix, floorCount, portBase, floor, sharedDataSource, sharedCertsSource);
   }
 }
 
