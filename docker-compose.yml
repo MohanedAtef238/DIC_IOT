@@ -98,6 +98,7 @@ services:
     ports:
       - "8080:9090"
       - "7070:7070"
+      - "1884:1883"
       - "5683-5688:5683-5688/udp"
     environment:
       TB_QUEUE_TYPE: in-memory
@@ -128,15 +129,19 @@ services:
 
     # Environment variables
     environment:
-      - host=host.docker.internal
+      - host=mytb
       - port=1883
-      - accessToken=1VP2JztoPCAWtjxOVd5z
-
+      - accessToken=6Uq9dZnyZiSQWo1UBPiD
     # Volumes bind
     volumes:
       - tb-gw-config:/thingsboard_gateway/config
       - tb-gw-logs:/thingsboard_gateway/logs
-      - tb-gw-extensions:/thingsboard_gateway/extensions
+      - ./certs:/certs:ro
+    depends_on:
+      - mosquitto
+      - mytb
+    networks:
+      - iot_net 
 volumes:
   mosquitto_data:
   mosquitto_log:
