@@ -1,4 +1,6 @@
 # Mosquitto ACL file
+# Global read access for telemetry (allows anonymous Node-RED to subscribe)
+topic readwrite campus/b01/#
 
 user 01
 topic readwrite campus/b01/f01/#

@@ -2,8 +2,13 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const sourcePath = process.env.FLOW_SOURCE || "/data/flows.json";
-const targetPath = process.env.FLOW_TARGET || "/data/flows.json";
+const flowFile = process.env.FLOW_FILE;
+if (!flowFile) {
+  console.error("FLOW_FILE env must be set");
+  process.exit(1);
+}
+const sourcePath = process.env.FLOW_SOURCE || path.join("/data", flowFile);
+const targetPath = process.env.FLOW_TARGET || path.join("/data", flowFile);
 const pollMs = Number.parseInt(process.env.FLOW_WATCH_INTERVAL_MS || "3000", 10);
 
 let lastDigest = null;
@@ -70,6 +75,17 @@ async function syncFlows() {
         writeText(targetPath, sourceText);
         console.log(`[watch-flows] synced ${sourcePath} -> ${targetPath}`);
       }
+
+      const credSourcePath = sourcePath.replace(".json", "_cred.json");
+      const credTargetPath = targetPath.replace(".json", "_cred.json");
+      if (fs.existsSync(credSourcePath)) {
+        const credSourceText = readText(credSourcePath);
+        const currentCredTarget = fs.existsSync(credTargetPath) ? readText(credTargetPath) : null;
+        if (currentCredTarget !== credSourceText) {
+          writeText(credTargetPath, credSourceText);
+          console.log(`[watch-flows] synced ${credSourcePath} -> ${credTargetPath}`);
+        }
+      }
     }
 
     const ready = await waitForEditor();
@@ -78,9 +94,8 @@ async function syncFlows() {
       return;
     }
 
-    await reloadFlows(sourceText);
     lastDigest = nextDigest;
-    console.log(`[watch-flows] reloaded flows from ${sourcePath}`);
+    console.log(`[watch-flows] monitored ${sourcePath} change, reload via API skipped to preserve credentials.`);
   } catch (error) {
     console.warn("[watch-flows] sync failed:", error.message || error);
   } finally {

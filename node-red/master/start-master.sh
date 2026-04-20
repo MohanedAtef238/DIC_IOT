@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+export TB_ACCESS_TOKEN=$(echo $GATEWAY_TOKEN | cut -d ',' -f 1)
 stop_floors() {
     echo "[master] Received termination signal. Stopping Node-RED workers..."
     node /usr/src/node-red/bootstrap-floors.js stop || true

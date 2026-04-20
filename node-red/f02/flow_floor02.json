@@ -1,0 +1,374 @@
+[
+    {
+        "id":  "floor2_tab",
+        "type":  "tab",
+        "label":  "flow_floor2",
+        "disabled":  false,
+        "info":  ""
+    },
+    {
+        "id":  "mosquitto_broker",
+        "type":  "mqtt-broker",
+        "name":  "Local Mosquitto",
+        "broker":  "mosquitto",
+        "port":  "1883",
+        "clientid":  "",
+        "autoConnect":  true,
+        "usetls":  false,
+        "protocolVersion":  "4",
+        "keepalive":  "60",
+        "cleansession":  true,
+        "birthTopic":  "",
+        "birthQos":  "0",
+        "birthPayload":  "",
+        "birthMsg":  {
+
+                     },
+        "closeTopic":  "",
+        "closeQos":  "0",
+        "closePayload":  "",
+        "closeMsg":  {
+
+                     },
+        "willTopic":  "",
+        "willQos":  "0",
+        "willPayload":  "",
+        "willMsg":  {
+
+                    },
+        "userProps":  "",
+        "sessionExpiry":  ""
+    },
+    {
+        "id":  "thingsboard_broker",
+        "type":  "mqtt-broker",
+        "name":  "ThingsBoard Gateway",
+        "broker":  "mytb",
+        "port":  "1883",
+        "clientid":  "nodered_f02",
+        "autoConnect":  true,
+        "usetls":  false,
+        "protocolVersion":  "4",
+        "keepalive":  "60",
+        "cleansession":  true,
+        "autoUnsubscribe":  true,
+        "birthTopic":  "",
+        "birthQos":  "0",
+        "birthPayload":  "",
+        "birthMsg":  {
+
+                     },
+        "closeTopic":  "",
+        "closeQos":  "0",
+        "closePayload":  "",
+        "closeMsg":  {
+
+                     },
+        "willTopic":  "",
+        "willQos":  "0",
+        "willPayload":  "",
+        "willMsg":  {
+
+                    },
+        "userProps":  "",
+        "sessionExpiry":  ""
+    },
+    {
+        "id":  "mqtt_in_telemetry",
+        "type":  "mqtt in",
+        "z":  "floor2_tab",
+        "name":  "Floor 2 MQTT Sensors",
+        "topic":  "campus/b01/f02/+/telemetry",
+        "qos":  "0",
+        "datatype":  "auto-detect",
+        "broker":  "mosquitto_broker",
+        "nl":  false,
+        "rap":  true,
+        "rh":  0,
+        "inputs":  0,
+        "x":  160,
+        "y":  120,
+        "wires":  [
+                      [
+                          "uplink_formatter"
+                      ]
+                  ]
+    },
+    {
+        "id":  "coap_sweeper_trigger",
+        "type":  "inject",
+        "z":  "floor2_tab",
+        "name":  "Every 5s",
+        "props":  [
+                      {
+                          "p":  "payload"
+                      }
+                  ],
+        "repeat":  "5",
+        "crontab":  "",
+        "once":  false,
+        "onceDelay":  0.1,
+        "topic":  "",
+        "payload":  "",
+        "payloadType":  "date",
+        "x":  130,
+        "y":  220,
+        "wires":  [
+                      [
+                          "coap_sweeper_logic"
+                      ]
+                  ]
+    },
+    {
+        "id":  "coap_sweeper_logic",
+        "type":  "function",
+        "z":  "floor2_tab",
+        "name":  "CoAP Sweeper",
+        "func":  "const floor = 2;\nfor (let i = 11; i \u003c= 20; i++) {\n    let port = 5700 + (floor - 1) * 20 + (i - 1);\n    node.send({\n        url: `coap://campus_engine:${port}/payload`,\n        method: \"GET\",\n        roomId: `b01-f02-r${i.toString().padStart(3, \u00270\u0027)}`\n    });\n}\nreturn null;",
+        "outputs":  1,
+        "timeout":  "",
+        "noerr":  0,
+        "initialize":  "",
+        "finalize":  "",
+        "libs":  [
+
+                 ],
+        "x":  320,
+        "y":  220,
+        "wires":  [
+                      [
+                          "coap_request_node"
+                      ]
+                  ]
+    },
+    {
+        "id":  "coap_request_node",
+        "type":  "coap request",
+        "z":  "floor2_tab",
+        "method":  "GET",
+        "confirmable":  false,
+        "observe":  false,
+        "multicast":  false,
+        "url":  "",
+        "content-format":  "application/json",
+        "raw-buffer":  false,
+        "name":  "Room Fetcher",
+        "x":  520,
+        "y":  220,
+        "wires":  [
+                      [
+                          "coap_response_parser"
+                      ]
+                  ]
+    },
+    {
+        "id":  "coap_response_parser",
+        "type":  "function",
+        "z":  "floor2_tab",
+        "name":  "Map CoAP to TB",
+        "func":  "let data;\nif (typeof msg.payload === \u0027object\u0027 \u0026\u0026 !Buffer.isBuffer(msg.payload)) {\n    data = msg.payload;\n} else {\n    const raw = Buffer.isBuffer(msg.payload) ? msg.payload.toString(\u0027utf8\u0027) : msg.payload;\n    try {\n        data = JSON.parse(raw);\n    } catch(e) {\n        node.error(\u0027CoAP JSON parse failed: \u0027 + e.message + \u0027 | raw: \u0027 + raw);\n        return null;\n    }\n}\n\nconst deviceName = data.metadata.sensor_id + \"-COAP\";\nconst hvac = data.actuators.hvac_mode;\n\n// Telemetry for TB\nconst telemetry = {\n    [deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: data.sensors.temperature,\n                humidity: data.sensors.humidity,\n                occupancy: data.sensors.occupancy,\n                light_level: data.sensors.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: data.actuators.lighting_dimmer\n            }\n        }\n    ]\n};\n\n// Connect message to ensure RPC path is open\nconst connect = { device: deviceName };\n\nreturn [\n    { payload: telemetry },\n    { payload: connect }\n];",
+        "outputs":  2,
+        "noerr":  0,
+        "initialize":  "",
+        "finalize":  "",
+        "libs":  [
+
+                 ],
+        "x":  730,
+        "y":  220,
+        "wires":  [
+                      [
+                          "tb_gateway_out"
+                      ],
+                      [
+                          "tb_gateway_connect"
+                      ]
+                  ]
+    },
+    {
+        "id":  "uplink_formatter",
+        "type":  "function",
+        "z":  "floor2_tab",
+        "name":  "Map MQTT to TB",
+        "func":  "const deviceName = msg.payload.deviceName;\nconst hvac = msg.payload.hvac_mode;\n\nconst telemetry = {\n    [deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: msg.payload.temperature,\n                humidity: msg.payload.humidity,\n                occupancy: msg.payload.occupancy,\n                light_level: msg.payload.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: msg.payload.lighting_dimmer\n            }\n        }\n    ]\n};\n\nconst connect = { device: deviceName };\n\nreturn [\n    { payload: telemetry },\n    { payload: connect }\n];",
+        "outputs":  2,
+        "noerr":  0,
+        "initialize":  "",
+        "finalize":  "",
+        "libs":  [
+
+                 ],
+        "x":  450,
+        "y":  120,
+        "wires":  [
+                      [
+                          "tb_gateway_out"
+                      ],
+                      [
+                          "tb_gateway_connect"
+                      ]
+                  ]
+    },
+    {
+        "id":  "tb_gateway_out",
+        "type":  "mqtt out",
+        "z":  "floor2_tab",
+        "name":  "ThingsBoard Gateway Uplink",
+        "topic":  "v1/gateway/telemetry",
+        "qos":  "1",
+        "retain":  "",
+        "respTopic":  "",
+        "contentType":  "",
+        "userProps":  "",
+        "correl":  "",
+        "expiry":  "",
+        "broker":  "thingsboard_broker",
+        "x":  940,
+        "y":  100,
+        "wires":  [
+
+                  ]
+    },
+    {
+        "id":  "tb_gateway_connect",
+        "type":  "mqtt out",
+        "z":  "floor2_tab",
+        "name":  "ThingsBoard Gateway Connect",
+        "topic":  "v1/gateway/connect",
+        "qos":  "1",
+        "retain":  "",
+        "respTopic":  "",
+        "contentType":  "",
+        "userProps":  "",
+        "correl":  "",
+        "expiry":  "",
+        "broker":  "thingsboard_broker",
+        "x":  950,
+        "y":  160,
+        "wires":  [
+
+                  ]
+    },
+    {
+        "id":  "tb_rpc_in",
+        "type":  "mqtt in",
+        "z":  "floor2_tab",
+        "name":  "ThingsBoard RPC Listener",
+        "topic":  "v1/gateway/rpc",
+        "qos":  "2",
+        "datatype":  "auto-detect",
+        "broker":  "thingsboard_broker",
+        "nl":  false,
+        "rap":  true,
+        "rh":  0,
+        "inputs":  0,
+        "x":  160,
+        "y":  320,
+        "wires":  [
+                      [
+                          "tb_rpc_debug",
+                          "tb_rpc_router"
+                      ]
+                  ]
+    },
+    {
+        "id":  "tb_rpc_router",
+        "type":  "function",
+        "z":  "floor2_tab",
+        "name":  "RPC Protocol Router",
+        "func":  "const deviceName = msg.payload.device;\nif (!deviceName.includes(\"-f02\")) { return null; } // Floor Guard\n\nconst rpcData = msg.payload.data;\nconst method = rpcData.method;\nconst params = rpcData.params;\nconst rpcId = rpcData.id; // 1. Capture the exact RPC ID from ThingsBoard\n\n// 2. Create a separate, dedicated message object for the ThingsBoard reply\nconst tbReplyMsg = {\n    payload: {\n        device: deviceName,\n        id: rpcId,\n        data: {\n            success: true,\n            state: params\n        }\n    }\n};\n\nconst cmdPayload = { hvac_mode: params };\n\nif (deviceName.endsWith(\"-COAP\")) {\n    const baseId = deviceName.replace(\"-COAP\", \"\");\n    const roomNumStr = baseId.split(\"-r\")[1];\n    const roomNum = parseInt(roomNumStr, 10);\n    const floor = 2;\n    const port = 5700 + (floor - 1) * 20 + (roomNum - 1);\n    \n    msg.url = `coap://campus_engine:${port}/actuator/hvac`;\n    msg.method = \"PUT\";\n    msg.payload = cmdPayload;\n    \n    return [null, msg, tbReplyMsg];\n} else {\n    msg.topic = \"campus/b01/cmd/\" + deviceName;\n    msg.payload = cmdPayload;\n    \n    return [msg, null, tbReplyMsg];\n}",
+        "outputs":  3,
+        "timeout":  "",
+        "noerr":  0,
+        "initialize":  "",
+        "finalize":  "",
+        "libs":  [
+
+                 ],
+        "x":  460,
+        "y":  360,
+        "wires":  [
+                      [
+                          "mqtt_out_command"
+                      ],
+                      [
+                          "coap_put_command"
+                      ],
+                      [
+                          "53a2a11621e8e604"
+                      ]
+                  ]
+    },
+    {
+        "id":  "mqtt_out_command",
+        "type":  "mqtt out",
+        "z":  "floor2_tab",
+        "name":  "MQTT Command Publisher",
+        "topic":  "",
+        "qos":  "1",
+        "retain":  "",
+        "broker":  "mosquitto_broker",
+        "x":  740,
+        "y":  340,
+        "wires":  [
+
+                  ]
+    },
+    {
+        "id":  "coap_put_command",
+        "type":  "coap request",
+        "z":  "floor2_tab",
+        "method":  "PUT",
+        "observe":  false,
+        "url":  "",
+        "content-format":  "application/json",
+        "raw-buffer":  false,
+        "name":  "CoAP Command PUT",
+        "x":  720,
+        "y":  400,
+        "wires":  [
+                      [
+                          "tb_rpc_debug"
+                      ]
+                  ]
+    },
+    {
+        "id":  "tb_rpc_debug",
+        "type":  "debug",
+        "z":  "floor2_tab",
+        "name":  "TB RPC Debug",
+        "active":  true,
+        "tosidebar":  true,
+        "console":  false,
+        "tostatus":  false,
+        "complete":  "true",
+        "targetType":  "full",
+        "statusVal":  "",
+        "statusType":  "auto",
+        "x":  440,
+        "y":  460,
+        "wires":  [
+
+                  ]
+    },
+    {
+        "id":  "53a2a11621e8e604",
+        "type":  "mqtt out",
+        "z":  "floor2_tab",
+        "name":  "ThingsBoard rpc verify",
+        "topic":  "v1/gateway/rpc",
+        "qos":  "1",
+        "retain":  "",
+        "respTopic":  "",
+        "contentType":  "",
+        "userProps":  "",
+        "correl":  "",
+        "expiry":  "",
+        "broker":  "thingsboard_broker",
+        "x":  740,
+        "y":  500,
+        "wires":  [
+
+                  ]
+    }
+]

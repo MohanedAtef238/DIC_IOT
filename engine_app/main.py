@@ -67,18 +67,17 @@ async def run_engine():
     store.connect()
     saved_states = store.load_room_states()
 
-    # Each floor gets nrooms//2 MQTT rooms (odd slots) and nrooms//2 CoAP rooms (even slots).
-    # Pairs are created together: MQTT at rm, CoAP at rm+1.
+    # Each floor gets nrooms//2 MQTT rooms (r001-r010) and nrooms//2 CoAP rooms (r011-r020).
     mqtt_rooms = []
     coap_rooms = []
-    room_counter = 1
+    split = nrooms // 2
     for fl in range(1, nfloors + 1):
-        for _ in range(1, nrooms, 2):
-            mqtt_id = f"b01-f{fl:02d}-r{room_counter:03d}"
-            coap_id = f"b01-f{fl:02d}-r{room_counter+1:03d}"
-            mqtt_rooms.append(MQTT_room(fl, room_counter,     env, state=saved_states.get(mqtt_id)))
-            coap_rooms.append(CoAP_room(fl, room_counter + 1, env, state=saved_states.get(coap_id)))
-            room_counter += 2
+        for rm in range(1, split + 1):
+            mqtt_id = f"b01-f{fl:02d}-r{rm:03d}"
+            mqtt_rooms.append(MQTT_room(fl, rm, env, state=saved_states.get(mqtt_id)))
+        for rm in range(split + 1, nrooms + 1):
+            coap_id = f"b01-f{fl:02d}-r{rm:03d}"
+            coap_rooms.append(CoAP_room(fl, rm, env, state=saved_states.get(coap_id)))
 
     all_rooms = mqtt_rooms + coap_rooms
 

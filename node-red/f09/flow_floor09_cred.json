@@ -1,0 +1,7 @@
+{
+    "thingsboard_broker":  {
+                               "user":  "DX0SOYskJntPrGQxBEXT",
+                               "password":  "",
+                               "clientid":  "nodered_f09"
+                           }
+}

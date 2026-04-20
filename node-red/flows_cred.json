@@ -1,5 +1,0 @@
-{
-    "tb_direct_broker": {
-        "user": "${TB_ACCESS_TOKEN}"
-    }
-}

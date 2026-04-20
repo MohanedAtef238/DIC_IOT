@@ -21,8 +21,8 @@ class CoAP_room:
         self.floor = floor
         self.room_num = room_num
         self.id = f"b01-f{floor:02d}-r{room_num:03d}"
-        
-        self.port = 5700 + (room_num - 1)
+        per_floor = env.get("per_floor", 20)
+        self.port = 5700 + (floor - 1) * per_floor + (room_num - 1)
         self.dtls_psk = env.get("dtls_psk")  # pre-loaded dict from main, or None
 
         # see .env

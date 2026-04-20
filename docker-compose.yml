@@ -1,9 +1,39 @@
-﻿# Campus IoT - Docker Compose
+# Campus IoT - Docker Compose
 # Spins up:
 #   1. Eclipse Mosquitto (MQTT broker)
 #   2. campus_engine     (Python simulation engine)
 #   3. campus_dashboard  (Streamlit UI)
 # All services share the 'iot_net' bridge network.
+
+# ── Node-RED floor worker template ──────────────────────────────────
+# build: is intentionally NOT in this anchor — only nodered_floor_01 defines it.
+# All other floor services inherit the image tag and skip the redundant build step,
+# which prevents BuildKit from trying to tag the same image name in parallel.
+x-nodered-base: &nodered-base
+  image: dic_iot-nodered_worker:latest
+  init: true
+  stop_grace_period: 15s
+  networks:
+    - iot_net
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+  depends_on:
+    mosquitto:
+      condition: service_healthy
+    engine:
+      condition: service_started
+    mytb:
+      condition: service_started
+  restart: unless-stopped
+
+x-nodered-env: &nodered-env
+  TZ: Africa/Cairo
+  MQTT_HOST: mosquitto
+  MQTT_PORT: "8883"
+  COAP_HOST: campus_engine
+  NODE_OPTIONS: "--max-old-space-size=1024"
 
 services:
   mosquitto:
@@ -69,43 +99,148 @@ services:
       - engine
     restart: unless-stopped
 
-  nodered_master:
+  nodered_floor_01:
+    <<: *nodered-base
     build:
       context: .
       dockerfile: node-red/master/Dockerfile
-    image: dic_iot-nodered_custom:latest
-    container_name: nodered_master
-    init: true
-    stop_grace_period: 30s
-    entrypoint: [ "/usr/src/node-red/start-master.sh" ]
+    container_name: nodered_floor_01
     ports:
-      - "1880:1880"
-    networks:
-      - iot_net
+      - "1891:1880"
     volumes:
-      - ./node-red:/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./node-red/f01:/data
       - ./certs:/certs:ro
     environment:
-      TZ: Africa/Cairo
-      NODE_RED_FLOOR_COUNT: 10
-      NODE_RED_WORKER_IMAGE: dic_iot-nodered_custom:latest
-      NODE_RED_WORKER_PREFIX: nodered_floor
-      NODE_RED_WORKER_PORT_BASE: 1891
-      MQTT_HOST: mosquitto
-      MQTT_PORT: 8883
-      NODE_OPTIONS: --max-old-space-size=2048
-      COAP_HOST: campus_engine
-      FLOOR_NUMBER: 0
-      GATEWAY_TOKEN: ${GATEWAY_TOKEN}
-    deploy:
-      resources:
-        limits:
-          memory: 3G
-    depends_on:
-      - mosquitto
-      - engine
-    restart: unless-stopped
+      <<: *nodered-env
+      FLOOR_NUMBER: "01"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_01}
+      FLOW_FILE: "flow_floor01.json"
+
+  nodered_floor_02:
+    <<: *nodered-base
+    container_name: nodered_floor_02
+    ports:
+      - "1892:1880"
+    volumes:
+      - ./node-red/f02:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "02"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_02}
+      FLOW_FILE: "flow_floor02.json"
+
+  nodered_floor_03:
+    <<: *nodered-base
+    container_name: nodered_floor_03
+    ports:
+      - "1893:1880"
+    volumes:
+      - ./node-red/f03:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "03"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_03}
+      FLOW_FILE: "flow_floor03.json"
+
+  nodered_floor_04:
+    <<: *nodered-base
+    container_name: nodered_floor_04
+    ports:
+      - "1894:1880"
+    volumes:
+      - ./node-red/f04:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "04"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_04}
+      FLOW_FILE: "flow_floor04.json"
+
+  nodered_floor_05:
+    <<: *nodered-base
+    container_name: nodered_floor_05
+    ports:
+      - "1895:1880"
+    volumes:
+      - ./node-red/f05:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "05"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_05}
+      FLOW_FILE: "flow_floor05.json"
+
+  nodered_floor_06:
+    <<: *nodered-base
+    container_name: nodered_floor_06
+    ports:
+      - "1896:1880"
+    volumes:
+      - ./node-red/f06:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "06"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_06}
+      FLOW_FILE: "flow_floor06.json"
+
+  nodered_floor_07:
+    <<: *nodered-base
+    container_name: nodered_floor_07
+    ports:
+      - "1897:1880"
+    volumes:
+      - ./node-red/f07:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "07"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_07}
+      FLOW_FILE: "flow_floor07.json"
+
+  nodered_floor_08:
+    <<: *nodered-base
+    container_name: nodered_floor_08
+    ports:
+      - "1898:1880"
+    volumes:
+      - ./node-red/f08:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "08"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_08}
+      FLOW_FILE: "flow_floor08.json"
+
+  nodered_floor_09:
+    <<: *nodered-base
+    container_name: nodered_floor_09
+    ports:
+      - "1899:1880"
+    volumes:
+      - ./node-red/f09:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "09"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_09}
+      FLOW_FILE: "flow_floor09.json"
+
+  nodered_floor_10:
+    <<: *nodered-base
+    container_name: nodered_floor_10
+    ports:
+      - "1900:1880"
+    volumes:
+      - ./node-red/f10:/data
+      - ./certs:/certs:ro
+    environment:
+      <<: *nodered-env
+      FLOOR_NUMBER: "10"
+      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_10}
+      FLOW_FILE: "flow_floor10.json"
 
   mytb:
     container_name: mytb
@@ -118,11 +253,11 @@ services:
       - "5683-5688:5683-5688/udp"
     environment:
       TB_QUEUE_TYPE: in-memory
-      JAVA_OPTS: "-Xms2G -Xmx4G"
+      JAVA_OPTS: "-Xms1G -Xmx2G"
     deploy:
       resources:
         limits:
-          memory: 6G
+          memory: 4G
     networks:
       - iot_net
     volumes:
@@ -132,7 +267,7 @@ services:
       mosquitto:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "bash", "-c", "(echo > /dev/tcp/localhost/8080) >/dev/null 2>&1"]
+      test: [ "CMD", "bash", "-c", "(echo > /dev/tcp/localhost/8080) >/dev/null 2>&1" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -168,10 +303,20 @@ volumes:
   mosquitto_data:
   mosquitto_log:
   engine_data:
-  # tb-gw-logs:
-  #   name: tb-gw-logs
-  # tb-gw-extensions:
-  #   name: tb-gw-extensions
+  nodered_f01_data:
+  nodered_f02_data:
+  nodered_f03_data:
+  nodered_f04_data:
+  nodered_f05_data:
+  nodered_f06_data:
+  nodered_f07_data:
+  nodered_f08_data:
+  nodered_f09_data:
+  nodered_f10_data:
+    # tb-gw-logs:
+    #   name: tb-gw-logs
+    # tb-gw-extensions:
+    #   name: tb-gw-extensions
 
 networks:
   iot_net:
