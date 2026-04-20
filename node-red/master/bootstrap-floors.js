@@ -86,7 +86,7 @@ async function ensureVolume(name) {
   }
 }
 
-function desiredEnv(floor) {
+function desiredEnv(floor, token) {
   return [
     `TZ=${process.env.TZ || "Africa/Cairo"}`,
     `FLOOR_NUMBER=${floor}`,
@@ -96,6 +96,7 @@ function desiredEnv(floor) {
     `NODE_OPTIONS=${process.env.NODE_OPTIONS || ""}`,
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
+    `TB_ACCESS_TOKEN=${token}`,
   ];
 }
 
@@ -145,7 +146,10 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
   const floorTag = padFloor(floor);
   const name = `${prefix}_${floorTag}`;
   const volumeName = `${prefix}_${floorTag}_data`;
-  const workerEnv = desiredEnv(floor);
+  
+  const allTokens = (process.env.GATEWAY_TOKEN || "").split(",");
+  const token = (allTokens[floor - 1] || allTokens[0] || "").trim();
+  const workerEnv = desiredEnv(floor, token);
 
   await ensureVolume(volumeName);
 
@@ -196,6 +200,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       !hasEnv(info.Config.Env, "COAP_HOST", process.env.COAP_HOST || "campus_engine") ||
       !hasEnv(info.Config.Env, "FLOW_SOURCE", "/shared/flows.json") ||
       !hasEnv(info.Config.Env, "FLOW_TARGET", "/data/flows.json") ||
+      !hasEnv(info.Config.Env, "TB_ACCESS_TOKEN", token) ||
       !hasPortBinding(info, expectedHostPort);
 
     if (needsRecreate) {

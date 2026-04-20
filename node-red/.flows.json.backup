@@ -195,7 +195,7 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "observe all function",
-        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) {\n    node.warn('FLOOR_NUMBER=0: master node, skipping CoAP observation');\n    return null;\n}\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\n// Cancel any stale timers from a previous trigger (flow redeploy or catch/retry loop)\nconst prev = context.get('timers') || [];\nprev.forEach(t => clearTimeout(t));\n\nconst timers = [];\nlet delay = 0;\nfor (let room = 2; room <= 20; room += 2) {\n    const port = 5700 + floorOffset + room - 1;\n    const t = setTimeout(() => {\n        node.send({ url: `coap://${coapHost}:${port}/payload` });\n    }, delay);\n    timers.push(t);\n    delay += 3000;\n}\ncontext.set('timers', timers);\n\nreturn null;",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) {\n    node.warn('FLOOR_NUMBER=0: master node, skipping CoAP observation');\n    return null;\n}\nconst floorOffset = (floor - 1) * 20;\nconst coapHost = env.get(\"COAP_HOST\") || \"campus_engine\";\n\n// Cancel any stale timers from a previous trigger (flow redeploy or catch/retry loop)\nconst prev = context.get('timers') || [];\nprev.forEach(t => clearTimeout(t));\n\nconst timers = [];\nlet delay = 0;\nfor (let room = 1; room <= 20; room+=2) {\n    const port = 5700 + floorOffset + room - 1;\n    const t = setTimeout(() => {\n        node.send({ url: `coap://${coapHost}:${port}/payload` });\n    }, delay);\n    timers.push(t);\n    delay += 3000;\n}\ncontext.set('timers', timers);\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -216,19 +216,19 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "mqtt conversion",
-        "func": "const f = msg.payload.metadata.floor.toString().padStart(2, '0');\nconst r = msg.payload.metadata.room.toString().padStart(3, '0');\nmsg.topic = `campus/b01/f${f}/r${r}/telemetry`;\n\nmsg.payload = {\n    deviceName: msg.payload.metadata.sensor_id + \"-COAP\",\n    building: msg.payload.metadata.building,\n    floor: msg.payload.metadata.floor.toString(),\n    room: msg.payload.metadata.room.toString(),\n    ...msg.payload.sensors,\n    ...msg.payload.actuators\n};\n\nreturn msg;",
+        "func": "const meta = msg.payload.metadata;\n\n\nconst deviceName = meta.sensor_id + \"-COAP\";\n\n\nconst values = {\n    ...msg.payload.sensors,\n    ...msg.payload.actuators\n};\n\n\nvalues.building = meta.building;\nvalues.floor = meta.floor.toString();\nvalues.room = meta.room.toString();\n\n\nconst ts = Date.now();\n\n\nmsg.topic = \"v1/gateway/telemetry\";\n\n\nmsg.payload = JSON.stringify({\n    [deviceName]: [\n        {\n            ts: ts,\n            values: values\n        }\n    ]\n});\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 960,
-        "y": 320,
+        "x": 980,
+        "y": 260,
         "wires": [
             [
-                "80bc2d88ac44be79",
-                "3b22962487d0de80"
+                "3b22962487d0de80",
+                "4a0d9d37895f3192"
             ]
         ]
     },
@@ -237,7 +237,7 @@
         "type": "mqtt out",
         "z": "6db520c8e77fa5c3",
         "name": "Mqtt out",
-        "topic": "",
+        "topic": "v1/gateway/telemetry",
         "qos": "2",
         "retain": "",
         "respTopic": "",
@@ -245,9 +245,9 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "75bf69f74513b636",
-        "x": 1240,
-        "y": 320,
+        "broker": "tb_direct_broker",
+        "x": 880,
+        "y": 840,
         "wires": []
     },
     {
@@ -280,8 +280,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1130,
-        "y": 220,
+        "x": 1290,
+        "y": 200,
         "wires": []
     },
     {
@@ -297,13 +297,14 @@
         "rap": true,
         "rh": 0,
         "inputs": 1,
-        "x": 950,
+        "x": 830,
         "y": 500,
         "wires": [
             [
                 "30b9849158dd80e5",
                 "coap_cmd_parse",
-                "worker_telemetry"
+                "worker_telemetry",
+                "9c9c50a6c41bc118"
             ]
         ]
     },
@@ -340,8 +341,7 @@
         "y": 500,
         "wires": [
             [
-                "794dd6c193d3a444",
-                "9c9c50a6c41bc118"
+                "794dd6c193d3a444"
             ]
         ]
     },
@@ -373,23 +373,6 @@
                 "ca17e0f31e5c9bd8"
             ]
         ]
-    },
-    {
-        "id": "9c9c50a6c41bc118",
-        "type": "debug",
-        "z": "6db520c8e77fa5c3",
-        "name": "debug 4",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "topic",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 440,
-        "wires": []
     },
     {
         "id": "coap_err_catch",
@@ -445,12 +428,10 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1190,
-        "y": 600,
+        "x": 1180,
+        "y": 420,
         "wires": [
-            [
-                "worker_telemetry_debug"
-            ]
+            []
         ]
     },
     {
@@ -474,11 +455,11 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 230,
-        "y": 680,
+        "x": 90,
+        "y": 720,
         "wires": [
             [
-                "22e26c359a3d010d"
+                "500fec137fc44594"
             ]
         ]
     },
@@ -494,8 +475,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 830,
-        "y": 680,
+        "x": 970,
+        "y": 360,
         "wires": [
             [
                 "062fdea63fb0f04e"
@@ -524,7 +505,7 @@
         "payload": "",
         "payloadType": "date",
         "x": 210,
-        "y": 840,
+        "y": 880,
         "wires": [
             [
                 "e6119e4f8424d0b6"
@@ -536,18 +517,19 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "function 2",
-        "func": "let rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0\n}));\n\nfor (let i = 0; i < 20; i++) {\n    let room = rooms[i];\n\n    let avg = room.count > 0 ? room.temp_sum / room.count : 0;\n\n    node.send({\n        payload: {\n            room: i + 1,\n            average: avg\n        }\n    });\n}\nflow.set(\"rooms\",undefined);\nreturn null;",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) {\n    node.warn('FLOOR_NUMBER=0: master node');\n    return null;\n}\nlet rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0\n}));\n\nfor (let i = 0; i < 20; i++) {\n    let room = rooms[i];\n\n    let avg = room.count > 0 ? room.temp_sum / room.count : 0;\n\n    // Build device name (adjust if needed)\n    const deviceName = `b01-f01-r${(i + 1).toString().padStart(3, '0')}`;\n\n    node.send({\n        topic: \"v1/gateway/telemetry\",\n        payload: JSON.stringify({\n            [deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: {\n                        temperature: avg\n                    }\n                }\n            ]\n        })\n    });\n}\n\n// reset after sending\nflow.set(\"rooms\", undefined);\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 420,
-        "y": 840,
+        "x": 500,
+        "y": 860,
         "wires": [
             [
-                "d58541e2b69a6d99"
+                "d58541e2b69a6d99",
+                "80bc2d88ac44be79"
             ]
         ]
     },
@@ -556,7 +538,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 6",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": true,
         "tostatus": false,
@@ -564,8 +546,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 650,
-        "y": 840,
+        "x": 610,
+        "y": 920,
         "wires": []
     },
     {
@@ -573,7 +555,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 5",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -581,8 +563,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1430,
-        "y": 600,
+        "x": 1340,
+        "y": 320,
         "wires": []
     },
     {
@@ -623,6 +605,155 @@
         "wires": [
             []
         ]
+    },
+    {
+        "id": "4a0d9d37895f3192",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 7",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "access",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1030,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "500fec137fc44594",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "subscribe to all",
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) {\n    node.warn('FLOOR_NUMBER=0: master node, skipping MQTT subscriptions');\n    return null;\n}\nconst floorOffset = (floor - 1) * 20;\nconst floorstr = floor.toString().padStart(2, '0');\n\nnode.send({ action: \"subscribe\", topic: `campus/b01/f${floorstr}/+/telemetry` });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 720,
+        "wires": [
+            [
+                "3f2d8b5dfa3b447f"
+            ]
+        ]
+    },
+    {
+        "id": "3f2d8b5dfa3b447f",
+        "type": "mqtt in",
+        "z": "6db520c8e77fa5c3",
+        "name": "",
+        "topic": "",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "75bf69f74513b636",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 510,
+        "y": 720,
+        "wires": [
+            [
+                "93c01a668e58c7f0",
+                "1c59a27402b552f0",
+                "d69534778053eeda"
+            ]
+        ]
+    },
+    {
+        "id": "93c01a668e58c7f0",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 8",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 590,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "1c59a27402b552f0",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "mqtt conversion 2",
+        "func": "const p = msg.payload;\n\n\nconst deviceName = p.deviceName;\n\n\nconst skip = new Set([\"deviceName\", \"building\", \"floor\", \"room\", \"timestamp\"]);\n\nconst values = {};\nfor (const [k, v] of Object.entries(p)) {\n    if (!skip.has(k)) {\n        values[k] = v;\n    }\n}\n\n\nconst ts = p.timestamp ? p.timestamp * 1000 : Date.now();\n\n\nmsg.topic = \"v1/gateway/telemetry\";\n\nmsg.payload = JSON.stringify({\n    [deviceName]: [\n        {\n            ts: ts,\n            values: values\n        }\n    ]\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 740,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d69534778053eeda",
+        "type": "function",
+        "z": "6db520c8e77fa5c3",
+        "name": "accumulate for average 2",
+        "func": "let rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0\n}));\n\nlet curr_room = (msg.payload.room - 1)%20;\nrooms[curr_room].count++;\nrooms[curr_room].temp_sum+=msg.payload.temperature;\n\nflow.set(\"rooms\",rooms);\n\nmsg.payload = rooms[curr_room];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 720,
+        "wires": [
+            [
+                "9153fa5d176c9abe"
+            ]
+        ]
+    },
+    {
+        "id": "9153fa5d176c9abe",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 9",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "9c9c50a6c41bc118",
+        "type": "debug",
+        "z": "6db520c8e77fa5c3",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 970,
+        "y": 560,
+        "wires": []
     },
     {
         "id": "tb_fwd_inject",
@@ -677,13 +808,13 @@
         "topic": "",
         "qos": "1",
         "datatype": "json",
-        "broker": "73b48127bf2649bd",
+        "broker": "75bf69f74513b636",
         "nl": false,
         "rap": false,
         "rh": 0,
         "inputs": 1,
-        "x": 520,
-        "y": 200,
+        "x": 330,
+        "y": 380,
         "wires": [
             [
                 "tb_fwd_convert"
@@ -702,8 +833,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 460,
-        "y": 200,
+        "x": 550,
+        "y": 460,
         "wires": [
             [
                 "tb_fwd_out"
@@ -724,8 +855,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 720,
-        "y": 200,
+        "x": 860,
+        "y": 220,
         "wires": []
     },
     {
@@ -758,7 +889,7 @@
         "type": "function",
         "z": "tb_cmd_tab",
         "name": "master-only subscribe",
-        "func": "const floor=Number(env.get('FLOOR_NUMBER')||0);if(floor!==0)return null;return[[{action:'subscribe',topic:'v1/gateway/attributes',qos:1},{action:'subscribe',topic:'v1/gateway/rpc',qos:1}]];",
+        "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor !== 0) {\n    // Only the master node (floor 0) should subscribe to these gateway topics.\n    // Worker nodes will receive commands via the `campus/b01/cmd/...` topic.\n    return null;\n}\n\n// The master node subscribes to the ThingsBoard gateway topics for\n// shared attribute updates and RPC commands.\nnode.send({ action: 'subscribe', topic: 'v1/gateway/attributes'});\nnode.send({ action: 'subscribe', topic: 'v1/gateway/rpc'});\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -790,7 +921,8 @@
         "y": 200,
         "wires": [
             [
-                "tb_cmd_parse"
+                "tb_cmd_parse",
+                "38de2aef2354574c"
             ]
         ]
     },
@@ -799,18 +931,21 @@
         "type": "function",
         "z": "tb_cmd_tab",
         "name": "route to Mosquitto cmd",
-        "func": "const floor=Number(env.get('FLOOR_NUMBER')||0);if(floor!==0)return null;let body;try{body=typeof msg.payload==='string'?JSON.parse(msg.payload):msg.payload;}catch(e){return null;}const deviceName=body.device;if(!deviceName)return null;let cmd={};const topic=msg.topic||'';if(topic==='v1/gateway/attributes'){const data=body.data||{};if(data.hvac_mode!==undefined)cmd.hvac_mode=data.hvac_mode;if(data.lighting_dimmer!==undefined)cmd.lighting_dimmer=parseInt(data.lighting_dimmer,10);}else if(topic==='v1/gateway/rpc'){const d=body.data||{};const method=d.method;const params=d.params;if(method==='hvac'||method==='hvac_mode'){cmd.hvac_mode=typeof params==='object'?params.hvac_mode:params;}else if(method==='light_dimmer'||method==='lighting_dimmer'){cmd.lighting_dimmer=typeof params==='object'?params.lighting_dimmer:parseInt(params,10);}}if(Object.keys(cmd).length===0)return null;msg.topic=`campus/b01/cmd/${deviceName}`;msg.payload=JSON.stringify(cmd);return msg;",
-        "outputs": 1,
+        "func": "const floor=Number(env.get('FLOOR_NUMBER')||0);\nif(floor!==0)return null;\n\nlet body;\ntry{body=typeof msg.payload==='string'?JSON.parse(msg.payload):msg.payload;}catch(e){return null;}\nconst deviceName=body.device;\nif(!deviceName)return null;\n\nlet cmd={};\nconst topic=msg.topic||'';\nlet rpcMsg = null;\n\nif(topic==='v1/gateway/attributes'){\n    const data=body.data||{};\n    if(data.hvac_mode!==undefined)cmd.hvac_mode=data.hvac_mode;\n    if(data.lighting_dimmer!==undefined)cmd.lighting_dimmer=parseInt(data.lighting_dimmer,10);\n}else if(topic==='v1/gateway/rpc'){\n    const d=body.data||{};\n    const method=d.method;\n    const params=d.params;\n    if(method==='hvac'||method==='hvac_mode'){\n        cmd.hvac_mode=typeof params==='object'?params.hvac_mode:params;\n    }else if(method==='light_dimmer'||method==='lighting_dimmer'){\n        cmd.lighting_dimmer=typeof params==='object'?params.lighting_dimmer:parseInt(params,10);\n    }\n    if (d.id !== undefined) {\n        rpcMsg = {\n            topic: 'v1/gateway/rpc',\n            payload: JSON.stringify({\n                device: deviceName,\n                id: d.id,\n                data: { success: true }\n            })\n        };\n    }\n}\n\nif(Object.keys(cmd).length===0) return [null, rpcMsg];\n\nlet cmdMsg = {\n    topic: `campus/b01/cmd/${deviceName}`,\n    payload: JSON.stringify(cmd)\n};\n\nreturn [cmdMsg, rpcMsg];",
+        "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 200,
+        "x": 950,
+        "y": 120,
         "wires": [
             [
                 "tb_cmd_out"
+            ],
+            [
+                "tb_rpc_reply_out"
             ]
         ]
     },
@@ -828,8 +963,42 @@
         "correl": "",
         "expiry": "",
         "broker": "73b48127bf2649bd",
-        "x": 970,
-        "y": 200,
+        "x": 1180,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "tb_rpc_reply_out",
+        "type": "mqtt out",
+        "z": "tb_cmd_tab",
+        "name": "TB RPC Reply",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 1180,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "38de2aef2354574c",
+        "type": "debug",
+        "z": "tb_cmd_tab",
+        "name": "debug 10",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 260,
         "wires": []
     }
 ]

@@ -1,4 +1,4 @@
-# Campus IoT - Docker Compose
+﻿# Campus IoT - Docker Compose
 # Spins up:
 #   1. Eclipse Mosquitto (MQTT broker)
 #   2. campus_engine     (Python simulation engine)
@@ -97,7 +97,7 @@ services:
       NODE_OPTIONS: --max-old-space-size=2048
       COAP_HOST: campus_engine
       FLOOR_NUMBER: 0
-      TB_ACCESS_TOKEN: Rrjyib4qgEX7UN0Tr61m
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN}
     deploy:
       resources:
         limits:
@@ -136,42 +136,42 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-  tb-gateway:
-    image: thingsboard/tb-gateway:3.7-stable
-    container_name: tb-gateway
-    restart: always
+  # tb-gateway:
+  #   image: thingsboard/tb-gateway:3.7-stable
+  #   container_name: tb-gateway
+  #   restart: always
 
-    ports:
-      - "5000:5000" # REST connector
+  #   ports:
+  #     - "5000:5000" # REST connector
 
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
 
-    environment:
-      - host=mytb
-      - port=1883
-      - accessToken=Rrjyib4qgEX7UN0Tr61m
-    volumes:
-      - tb-gw-logs:/thingsboard_gateway/logs
-      - tb-gw-extensions:/thingsboard_gateway/extensions
-      - ./certs:/certs:ro
-      - ./tb-gateway-mapping.json:/thingsboard_gateway/config/mqtt.json
-      - ./tb-gateway-config.json:/thingsboard_gateway/config/tb_gateway.json
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-      mytb:
-        condition: service_healthy
-    networks:
-      - iot_net
+  #   environment:
+  #     - host=mytb
+  #     - port=1883
+  #     - accessToken=Rrjyib4qgEX7UN0Tr61m
+  #   volumes:
+  #     - tb-gw-logs:/thingsboard_gateway/logs
+  #     - tb-gw-extensions:/thingsboard_gateway/extensions
+  #     - ./certs:/certs:ro
+  #     - ./tb-gateway-mapping.json:/thingsboard_gateway/config/mqtt.json
+  #     - ./tb-gateway-config.json:/thingsboard_gateway/config/tb_gateway.json
+  #   depends_on:
+  #     mosquitto:
+  #       condition: service_healthy
+  #     mytb:
+  #       condition: service_healthy
+  #   networks:
+  #     - iot_net
 volumes:
   mosquitto_data:
   mosquitto_log:
   engine_data:
-  tb-gw-logs:
-    name: tb-gw-logs
-  tb-gw-extensions:
-    name: tb-gw-extensions
+  # tb-gw-logs:
+  #   name: tb-gw-logs
+  # tb-gw-extensions:
+  #   name: tb-gw-extensions
 
 networks:
   iot_net:

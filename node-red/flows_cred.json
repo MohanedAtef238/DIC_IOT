@@ -1,6 +1,5 @@
 {
     "tb_direct_broker": {
-        "user": "Rrjyib4qgEX7UN0Tr61m",
-        "password": ""
+        "user": "${TB_ACCESS_TOKEN}"
     }
 }
