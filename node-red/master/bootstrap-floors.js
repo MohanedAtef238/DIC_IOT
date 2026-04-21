@@ -87,6 +87,7 @@ async function ensureVolume(name) {
 }
 
 function desiredEnv(floor, token) {
+  const floorTag = padFloor(floor);
   return [
     `TZ=${process.env.TZ || "Africa/Cairo"}`,
     `FLOOR_NUMBER=${floor}`,
@@ -97,6 +98,7 @@ function desiredEnv(floor, token) {
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
     `TB_ACCESS_TOKEN=${token}`,
+    `TB_GATEWAY_CLIENT_ID=nodered_f${floorTag}_gw`,
   ];
 }
 
@@ -201,6 +203,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       !hasEnv(info.Config.Env, "FLOW_SOURCE", "/shared/flows.json") ||
       !hasEnv(info.Config.Env, "FLOW_TARGET", "/data/flows.json") ||
       !hasEnv(info.Config.Env, "TB_ACCESS_TOKEN", token) ||
+      !hasEnv(info.Config.Env, "TB_GATEWAY_CLIENT_ID", `nodered_f${floorTag}_gw`) ||
       !hasPortBinding(info, expectedHostPort);
 
     if (needsRecreate) {

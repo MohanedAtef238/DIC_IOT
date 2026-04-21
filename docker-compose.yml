@@ -98,6 +98,7 @@ services:
       COAP_HOST: campus_engine
       FLOOR_NUMBER: 0
       GATEWAY_TOKEN: ${GATEWAY_TOKEN}
+      TB_GATEWAY_CLIENT_ID: nodered_master_gw
     deploy:
       resources:
         limits:
