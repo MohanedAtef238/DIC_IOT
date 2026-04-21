@@ -212,9 +212,7 @@
         "x": 900,
         "y": 100,
         "wires": [
-            [
-                "tb_gateway_out"
-            ],
+            [],
             [
                 "tb_gateway_connect"
             ],
@@ -304,9 +302,7 @@
         "x": 790,
         "y": 220,
         "wires": [
-            [
-                "tb_gateway_out"
-            ],
+            [],
             [
                 "tb_gateway_connect"
             ],
@@ -482,13 +478,13 @@
         "name": "debug 6",
         "active": false,
         "tosidebar": true,
-        "console": true,
+        "console": false,
         "tostatus": false,
         "complete": "payload",
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 730,
+        "x": 720,
         "y": 800,
         "wires": []
     },
