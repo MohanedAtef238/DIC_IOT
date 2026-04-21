@@ -2,7 +2,15 @@
     {
         "id": "6db520c8e77fa5c3",
         "type": "tab",
-        "label": "flow_floor",
+        "label": "Floor Telemetry",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "tb_cmd_tab",
+        "type": "tab",
+        "label": "Floor Commands",
         "disabled": false,
         "info": "",
         "env": []
@@ -204,7 +212,9 @@
         "x": 900,
         "y": 100,
         "wires": [
-            [],
+            [
+                "tb_gateway_out"
+            ],
             [
                 "tb_gateway_connect"
             ],
@@ -294,7 +304,9 @@
         "x": 790,
         "y": 220,
         "wires": [
-            [],
+            [
+                "tb_gateway_out"
+            ],
             [
                 "tb_gateway_connect"
             ],
@@ -317,8 +329,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1240,
-        "y": 560,
+        "x": 1300,
+        "y": 680,
         "wires": []
     },
     {
@@ -337,131 +349,6 @@
         "broker": "tb_direct_broker",
         "x": 1290,
         "y": 420,
-        "wires": []
-    },
-    {
-        "id": "tb_rpc_in",
-        "type": "mqtt in",
-        "z": "6db520c8e77fa5c3",
-        "name": "ThingsBoard RPC Listener",
-        "topic": "v1/gateway/rpc",
-        "qos": "2",
-        "datatype": "auto-detect",
-        "broker": "tb_direct_broker",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 190,
-        "y": 360,
-        "wires": [
-            [
-                "tb_rpc_debug",
-                "tb_rpc_router"
-            ]
-        ]
-    },
-    {
-        "id": "tb_rpc_router",
-        "type": "function",
-        "z": "6db520c8e77fa5c3",
-        "name": "RPC Protocol Router",
-        "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\n\nlet body = msg.payload;\nif (typeof body === 'string') {\n    try {\n        body = JSON.parse(body);\n    } catch (e) {\n        node.error('TB RPC parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst deviceName = body.device;\nconst rpcData = body.data || {};\nconst method = rpcData.method;\nconst params = rpcData.params;\nconst rpcId = rpcData.id;\nif (!deviceName || rpcId === undefined) return null;\n\nlet cmdPayload = null;\nif (method === 'hvac' || method === 'hvac_mode') {\n    cmdPayload = { hvac_mode: typeof params === 'object' ? params.hvac_mode : params };\n} else if (method === 'light_dimmer' || method === 'lighting_dimmer') {\n    const rawValue = typeof params === 'object' ? params.lighting_dimmer : params;\n    cmdPayload = { lighting_dimmer: parseInt(rawValue, 10) };\n}\nif (!cmdPayload) return null;\n\nconst tbReplyMsg = {\n    payload: JSON.stringify({\n        device: deviceName,\n        id: rpcId,\n        data: {\n            success: true,\n            state: Object.values(cmdPayload)[0]\n        }\n    })\n};\n\nconst immediateValues = { ...cmdPayload };\nif (cmdPayload.hvac_mode !== undefined) {\n    immediateValues.hvac_status = cmdPayload.hvac_mode;\n}\nconst telemetryMsg = {\n    payload: JSON.stringify({\n        [deviceName]: [\n            {\n                ts: Date.now(),\n                values: immediateValues\n            }\n        ]\n    })\n};\n\nif (deviceName.endsWith('-COAP')) {\n    const roomMatch = deviceName.match(/-r(\\d+)-COAP$/);\n    if (!roomMatch) {\n        node.error('Unable to extract room number from device: ' + deviceName, msg);\n        return [null, null, tbReplyMsg, telemetryMsg];\n    }\n    const roomNum = parseInt(roomMatch[1], 10);\n    const coapHost = env.get('COAP_HOST') || 'campus_engine';\n    const actuator = cmdPayload.hvac_mode !== undefined ? 'hvac' : 'light_dimmer';\n    return [\n        null,\n        {\n            url: `coap://${coapHost}:${5700 + roomNum - 1}/actuator/${actuator}`,\n            method: 'PUT',\n            payload: JSON.stringify(cmdPayload)\n        },\n        tbReplyMsg,\n        telemetryMsg\n    ];\n}\n\nreturn [\n    {\n        topic: `campus/b01/cmd/${deviceName}`,\n        payload: JSON.stringify(cmdPayload)\n    },\n    null,\n    tbReplyMsg,\n    telemetryMsg\n];",
-        "outputs": 4,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 460,
-        "y": 360,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ],
-            [
-                "coap_put_command"
-            ],
-            [
-                "tb_rpc_reply_out"
-            ],
-            [
-                "tb_gateway_out"
-            ]
-        ]
-    },
-    {
-        "id": "mqtt_out_command",
-        "type": "mqtt out",
-        "z": "6db520c8e77fa5c3",
-        "name": "MQTT Command Publisher",
-        "topic": "",
-        "qos": "1",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "73b48127bf2649bd",
-        "x": 760,
-        "y": 340,
-        "wires": []
-    },
-    {
-        "id": "coap_put_command",
-        "type": "coap request",
-        "z": "6db520c8e77fa5c3",
-        "method": "PUT",
-        "confirmable": true,
-        "observe": false,
-        "multicast": false,
-        "multicastTimeout": 20000,
-        "url": "",
-        "content-format": "application/json",
-        "raw-buffer": false,
-        "name": "CoAP Command PUT",
-        "x": 740,
-        "y": 400,
-        "wires": [
-            [
-                "tb_rpc_debug"
-            ]
-        ]
-    },
-    {
-        "id": "tb_rpc_reply_out",
-        "type": "mqtt out",
-        "z": "6db520c8e77fa5c3",
-        "name": "ThingsBoard rpc verify",
-        "topic": "v1/gateway/rpc",
-        "qos": "1",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "tb_direct_broker",
-        "x": 760,
-        "y": 500,
-        "wires": []
-    },
-    {
-        "id": "tb_rpc_debug",
-        "type": "debug",
-        "z": "6db520c8e77fa5c3",
-        "name": "TB RPC Debug",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 460,
-        "y": 460,
         "wires": []
     },
     {
@@ -489,7 +376,7 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 5",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -559,8 +446,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 170,
-        "y": 620,
+        "x": 230,
+        "y": 740,
         "wires": [
             [
                 "e6119e4f8424d0b6"
@@ -579,8 +466,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 430,
-        "y": 620,
+        "x": 490,
+        "y": 740,
         "wires": [
             [
                 "d58541e2b69a6d99",
@@ -593,6 +480,385 @@
         "type": "debug",
         "z": "6db520c8e77fa5c3",
         "name": "debug 6",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "mqtt_ack_subscribe_trigger",
+        "type": "inject",
+        "z": "tb_cmd_tab",
+        "name": "start ack subscribe",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1.5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 440,
+        "wires": [
+            [
+                "mqtt_ack_subscribe_logic"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_cmd_subscribe_trigger",
+        "type": "inject",
+        "z": "tb_cmd_tab",
+        "name": "start cmd subscribe",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1.2",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 500,
+        "wires": [
+            [
+                "mqtt_cmd_subscribe_logic"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_cmd_subscribe_logic",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Subscribe Floor Cmd",
+        "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\nconst floorstr = floor.toString().padStart(2, '0');\nreturn {\n    action: 'subscribe',\n    topic: `campus/b01/cmd/f${floorstr}/+`,\n    qos: 1\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 500,
+        "wires": [
+            [
+                "mqtt_cmd_in"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_cmd_in",
+        "type": "mqtt in",
+        "z": "tb_cmd_tab",
+        "name": "Floor Cmd",
+        "topic": "",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "75bf69f74513b636",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 590,
+        "y": 500,
+        "wires": [
+            [
+                "route_floor_command"
+            ]
+        ]
+    },
+    {
+        "id": "route_floor_command",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Route Floor Command",
+        "func": "const topic = msg.topic || '';\nconst match = topic.match(/^campus\\/b01\\/cmd\\/f(\\d{2})\\/r(\\d{3})$/);\nif (!match) return null;\n\nlet payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('Command payload parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst floorNum = parseInt(match[1], 10);\nconst roomNum = parseInt(match[2], 10);\nconst transport = payload.transport || 'mqtt';\nconst deviceName = payload.device_name || `b01-f${match[1]}-r${match[2]}`;\nconst commandId = payload.command_id;\nif (!commandId) {\n    node.error('Missing command_id for floor command', msg);\n    return null;\n}\n\nconst pending = flow.get('pendingRpcAcks') || {};\nconst state = pending[commandId];\nif (!state) {\n    node.warn(`No pending RPC state for command_id ${commandId}`);\n    return null;\n}\n\nif (transport === 'coap') {\n    return [null, {\n        topic,\n        payload,\n        floorNum,\n        roomNum,\n        deviceName,\n        _rpc: {\n            commandId,\n            deviceName: state.deviceName,\n            rpcId: state.rpcId,\n            startedAt: state.startedAt,\n            requested: state.requested\n        }\n    }];\n}\n\nreturn [{\n    topic: `campus/b01/cmd/${deviceName}`,\n    payload: JSON.stringify({\n        ...payload,\n        command_id: commandId\n    })\n}, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 640,
+        "wires": [
+            [
+                "mqtt_out_command"
+            ],
+            [
+                "coap_cmd_from_topic"
+            ]
+        ]
+    },
+    {
+        "id": "coap_cmd_from_topic",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Build CoAP PUT from Cmd",
+        "func": "const roomNum = Number(msg.roomNum);\nif (!roomNum) return null;\n\nconst payload = msg.payload || {};\nconst coapHost = env.get('COAP_HOST') || 'campus_engine';\nconst cmdPayload = {};\nlet actuator = null;\nif (payload.hvac_mode !== undefined) {\n    cmdPayload.hvac_mode = payload.hvac_mode;\n    actuator = 'hvac';\n}\nif (payload.lighting_dimmer !== undefined) {\n    cmdPayload.lighting_dimmer = payload.lighting_dimmer;\n    actuator = 'light_dimmer';\n}\nif (!actuator) return null;\n\nmsg.url = `coap://${coapHost}:${5700 + roomNum - 1}/actuator/${actuator}`;\nmsg.method = 'PUT';\nmsg.payload = cmdPayload;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 300,
+        "wires": [
+            [
+                "coap_put_command"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_ack_subscribe_logic",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Subscribe Floor Acks",
+        "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\nconst floorstr = floor.toString().padStart(2, '0');\nnode.send({ action: 'subscribe', topic: `campus/b01/f${floorstr}/+/ack/hvac_applied`, qos: 1 });\nnode.send({ action: 'subscribe', topic: `campus/b01/f${floorstr}/+/ack/light_dimmer_applied`, qos: 1 });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 440,
+        "wires": [
+            [
+                "mqtt_ack_in"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_ack_in",
+        "type": "mqtt in",
+        "z": "tb_cmd_tab",
+        "name": "Room Applied Ack",
+        "topic": "",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "75bf69f74513b636",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 1,
+        "x": 570,
+        "y": 440,
+        "wires": [
+            [
+                "mqtt_ack_handler"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_ack_handler",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Handle MQTT Ack",
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('MQTT ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst commandId = payload && payload.command_id;\nif (!commandId) return null;\n\nconst pending = flow.get('pendingRpcAcks') || {};\nconst state = pending[commandId];\nif (!state) return null;\n\ndelete pending[commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - state.startedAt;\nconst ackValues = {\n    rtt_ms: rttMs\n};\nif (payload.hvac_mode !== undefined) {\n    ackValues.hvac_mode = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_status = String(payload.hvac_mode).toLowerCase();\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (state.requested !== undefined) {\n    ackValues.requested_value = state.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: state.deviceName,\n            id: state.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [state.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'mqtt-ack',\n            command_id: commandId,\n            device: state.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 950,
+        "y": 480,
+        "wires": [
+            [
+                "tb_rpc_reply_out",
+                "698761cd744756f6"
+            ],
+            [
+                "tb_gateway_out_cmd"
+            ],
+            [
+                "tb_rpc_debug"
+            ]
+        ]
+    },
+    {
+        "id": "tb_rpc_in",
+        "type": "mqtt in",
+        "z": "tb_cmd_tab",
+        "name": "ThingsBoard RPC Listener",
+        "topic": "v1/gateway/rpc",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "tb_direct_broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "tb_rpc_debug",
+                "tb_rpc_router"
+            ]
+        ]
+    },
+    {
+        "id": "tb_rpc_router",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "RPC Protocol Router",
+        "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\n\nlet body = msg.payload;\nif (typeof body === 'string') {\n    try {\n        body = JSON.parse(body);\n    } catch (e) {\n        node.error('TB RPC parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst fullDeviceName = body.device;\nconst rpcData = body.data || {};\nconst method = rpcData.method;\nconst params = rpcData.params;\nconst rpcId = rpcData.id;\nif (!fullDeviceName || rpcId === undefined) return null;\n\nconst isCoap = fullDeviceName.endsWith('-COAP');\nconst deviceName = isCoap ? fullDeviceName.replace(/-COAP$/, '') : fullDeviceName;\nconst deviceMatch = deviceName.match(/^b01-f(\\d{2})-r(\\d{3})$/);\nif (!deviceMatch) {\n    node.error('Unsupported device name format: ' + fullDeviceName, msg);\n    return null;\n}\n\nlet cmdPayload = null;\nlet ackTopic = null;\nif (method === 'hvac' || method === 'hvac_mode') {\n    cmdPayload = { hvac_mode: typeof params === 'object' ? params.hvac_mode : params };\n    ackTopic = 'hvac_applied';\n} else if (method === 'light_dimmer' || method === 'lighting_dimmer') {\n    const rawValue = typeof params === 'object' ? params.lighting_dimmer : params;\n    cmdPayload = { lighting_dimmer: parseInt(rawValue, 10) };\n    ackTopic = 'light_dimmer_applied';\n}\nif (!cmdPayload) return null;\n\nconst commandId = `${fullDeviceName}:${rpcId}:${Date.now()}`;\nconst pending = flow.get('pendingRpcAcks') || {};\npending[commandId] = {\n    deviceName: fullDeviceName,\n    rpcId,\n    startedAt: Date.now(),\n    requested: Object.values(cmdPayload)[0],\n    ackTopic\n};\nflow.set('pendingRpcAcks', pending);\n\nreturn {\n    topic: `campus/b01/cmd/f${deviceMatch[1]}/r${deviceMatch[2]}`,\n    payload: JSON.stringify({\n        ...cmdPayload,\n        command_id: commandId,\n        device_name: deviceName,\n        transport: isCoap ? 'coap' : 'mqtt'\n    })\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 200,
+        "wires": [
+            [
+                "mqtt_out_command"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_out_command",
+        "type": "mqtt out",
+        "z": "tb_cmd_tab",
+        "name": "MQTT Command Publisher",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "75bf69f74513b636",
+        "x": 800,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "coap_put_command",
+        "type": "coap request",
+        "z": "tb_cmd_tab",
+        "method": "PUT",
+        "confirmable": true,
+        "observe": false,
+        "multicast": false,
+        "multicastTimeout": 20000,
+        "url": "",
+        "content-format": "application/json",
+        "raw-buffer": false,
+        "name": "CoAP Command PUT",
+        "x": 760,
+        "y": 300,
+        "wires": [
+            [
+                "coap_ack_handler"
+            ]
+        ]
+    },
+    {
+        "id": "coap_ack_handler",
+        "type": "function",
+        "z": "tb_cmd_tab",
+        "name": "Handle CoAP Ack",
+        "func": "const rpc = msg._rpc;\nif (!rpc || !rpc.commandId) return null;\n\nlet payload = msg.payload;\nif (Buffer.isBuffer(payload)) {\n    payload = payload.toString('utf8');\n}\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('CoAP ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst pending = flow.get('pendingRpcAcks') || {};\ndelete pending[rpc.commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - rpc.startedAt;\nconst ackValues = { rtt_ms: rttMs };\nif (payload.hvac_mode !== undefined) {\n    ackValues.hvac_mode = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_status = String(payload.hvac_mode).toLowerCase();\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (payload.ambient !== undefined) {\n    ackValues.light_level = payload.ambient;\n}\nif (rpc.requested !== undefined) {\n    ackValues.requested_value = rpc.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: rpc.deviceName,\n            id: rpc.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [rpc.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'coap-ack',\n            command_id: rpc.commandId,\n            device: rpc.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 340,
+        "wires": [
+            [
+                "tb_rpc_reply_out"
+            ],
+            [
+                "tb_gateway_out_cmd"
+            ],
+            [
+                "tb_rpc_debug"
+            ]
+        ]
+    },
+    {
+        "id": "tb_gateway_out_cmd",
+        "type": "mqtt out",
+        "z": "tb_cmd_tab",
+        "name": "ThingsBoard Gateway Uplink",
+        "topic": "v1/gateway/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 1290,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "tb_rpc_reply_out",
+        "type": "mqtt out",
+        "z": "tb_cmd_tab",
+        "name": "ThingsBoard rpc verify",
+        "topic": "v1/gateway/rpc",
+        "qos": "2",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 1280,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "tb_rpc_debug",
+        "type": "debug",
+        "z": "tb_cmd_tab",
+        "name": "TB RPC Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "698761cd744756f6",
+        "type": "debug",
+        "z": "tb_cmd_tab",
+        "name": "debug 1",
         "active": true,
         "tosidebar": true,
         "console": true,
@@ -601,8 +867,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 670,
-        "y": 680,
+        "x": 1310,
+        "y": 760,
         "wires": []
     }
 ]
