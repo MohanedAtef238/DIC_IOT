@@ -1,6 +1,7 @@
 const Docker = require("dockerode");
 
 const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET || "/var/run/docker.sock" });
+const WORKER_CONFIG_VERSION = "2026-04-23-1";
 
 function envInt(name, fallback) {
   const value = process.env[name];
@@ -97,6 +98,7 @@ function desiredEnv(floor, token) {
     `NODE_OPTIONS=${process.env.NODE_OPTIONS || ""}`,
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
+    `WORKER_CONFIG_VERSION=${WORKER_CONFIG_VERSION}`,
     `TB_ACCESS_TOKEN=${token}`,
     `TB_GATEWAY_CLIENT_ID=nodered_f${floorTag}_gw`,
   ];
@@ -151,6 +153,9 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
   
   const allTokens = (process.env.GATEWAY_TOKEN || "").split(",");
   const token = (allTokens[floor - 1] || allTokens[0] || "").trim();
+  if (!token) {
+    console.warn(`[bootstrap] floor ${floor} has empty TB_ACCESS_TOKEN (check GATEWAY_TOKEN in .env / compose environment)`);
+  }
   const workerEnv = desiredEnv(floor, token);
 
   await ensureVolume(volumeName);
@@ -202,6 +207,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       !hasEnv(info.Config.Env, "COAP_HOST", process.env.COAP_HOST || "campus_engine") ||
       !hasEnv(info.Config.Env, "FLOW_SOURCE", "/shared/flows.json") ||
       !hasEnv(info.Config.Env, "FLOW_TARGET", "/data/flows.json") ||
+      !hasEnv(info.Config.Env, "WORKER_CONFIG_VERSION", WORKER_CONFIG_VERSION) ||
       !hasEnv(info.Config.Env, "TB_ACCESS_TOKEN", token) ||
       !hasEnv(info.Config.Env, "TB_GATEWAY_CLIENT_ID", `nodered_f${floorTag}_gw`) ||
       !hasPortBinding(info, expectedHostPort);
