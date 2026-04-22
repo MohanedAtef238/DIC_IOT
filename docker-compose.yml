@@ -1,10 +1,4 @@
-﻿# Campus IoT - Docker Compose
-# Spins up:
-#   1. Eclipse Mosquitto (MQTT broker)
-#   2. campus_engine     (Python simulation engine)
-#   3. campus_dashboard  (Streamlit UI)
-# All services share the 'iot_net' bridge network.
-
+﻿
 services:
   mosquitto:
     image: eclipse-mosquitto:2
@@ -120,6 +114,10 @@ services:
     environment:
       TB_QUEUE_TYPE: in-memory
       JAVA_OPTS: "-Xms2G -Xmx4G"
+      MQTT_SSL_ENABLED: "true"
+      MQTT_SSL_CREDENTIALS_TYPE: PEM
+      MQTT_SSL_PEM_CERT: /certs/mytb.crt
+      MQTT_SSL_PEM_KEY: /certs/mytb.key
     deploy:
       resources:
         limits:
@@ -129,6 +127,7 @@ services:
     volumes:
       - ~/.mytb-data:/data
       - ~/.mytb-logs:/var/log/thingsboard
+      - ./certs:/certs:ro
     depends_on:
       mosquitto:
         condition: service_healthy

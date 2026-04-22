@@ -25,6 +25,17 @@ openssl x509 -req -in mosquitto.csr \
     -out mosquitto.crt
 rm -f mosquitto.csr san.ext
 
+# ThingsBoard cert signed by CA
+openssl genrsa -out mytb.key 2048
+openssl req -new -key mytb.key \
+    -subj "/CN=mytb/O=DIC_IOT/C=EG" -out mytb.csr
+echo "subjectAltName=DNS:mytb,DNS:localhost,IP:127.0.0.1" > san_mytb.ext
+openssl x509 -req -in mytb.csr \
+    -CA ca.crt -CAkey ca.key -CAcreateserial \
+    -days $DAYS -sha256 -extfile san_mytb.ext \
+    -out mytb.crt
+rm -f mytb.csr san_mytb.ext
+
 # DTLS pre-shared key 
 PSK_B64=$(openssl rand -hex 16 | python3 -c \
     "import sys,base64; print(base64.b64encode(bytes.fromhex(sys.stdin.read().strip())).decode())")
@@ -65,7 +76,7 @@ docker run --rm \
 
 echo ""
 echo "=== Generated certificates ==="
-ls -lh ca.crt ca.key mosquitto.crt mosquitto.key engine.crt engine.key dtls_psk.json
+ls -lh ca.crt ca.key mosquitto.crt mosquitto.key mytb.crt mytb.key engine.crt engine.key dtls_psk.json
 # for floor in 01 02 03 04 05 06 07 08 09 10; do
 #     ls -lh ${floor}.crt ${floor}.key
 # done
