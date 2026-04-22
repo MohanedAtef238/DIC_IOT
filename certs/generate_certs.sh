@@ -3,6 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Disable path conversion in Git Bash (Windows) to avoid issues with /CN
+export MSYS_NO_PATHCONV=1
+
 DAYS=3650
 SAN="subjectAltName=DNS:mosquitto,DNS:localhost,IP:127.0.0.1"
 
@@ -15,11 +18,12 @@ openssl req -x509 -new -nodes -key ca.key -sha256 -days $DAYS \
 openssl genrsa -out mosquitto.key 2048
 openssl req -new -key mosquitto.key \
     -subj "/CN=mosquitto/O=DIC_IOT/C=EG" -out mosquitto.csr
+echo "$SAN" > san.ext
 openssl x509 -req -in mosquitto.csr \
     -CA ca.crt -CAkey ca.key -CAcreateserial \
-    -days $DAYS -sha256 -extfile <(printf "$SAN") \
+    -days $DAYS -sha256 -extfile san.ext \
     -out mosquitto.crt
-rm -f mosquitto.csr
+rm -f mosquitto.csr san.ext
 
 # DTLS pre-shared key 
 PSK_B64=$(openssl rand -hex 16 | python3 -c \
@@ -44,10 +48,10 @@ generate_client_cert() {
 # Engine client cert — super-user, full campus/# access via ACL
 generate_client_cert "engine"
 
-# Per-floor client certs — CN matches floor number for pattern ACL
-for floor in 01 02 03 04 05 06 07 08 09 10; do
-    generate_client_cert "$floor"
-done
+# # Per-floor client certs — CN matches floor number for pattern ACL
+# for floor in 01 02 03 04 05 06 07 08 09 10; do
+#     generate_client_cert "$floor"
+# done
 
 # Clean up serial file after all certs are generated
 rm -f ca.srl
@@ -62,9 +66,9 @@ docker run --rm \
 echo ""
 echo "=== Generated certificates ==="
 ls -lh ca.crt ca.key mosquitto.crt mosquitto.key engine.crt engine.key dtls_psk.json
-for floor in 01 02 03 04 05 06 07 08 09 10; do
-    ls -lh ${floor}.crt ${floor}.key
-done
+# for floor in 01 02 03 04 05 06 07 08 09 10; do
+#     ls -lh ${floor}.crt ${floor}.key
+# done
 
 echo ""
 echo "--- Copy these into .env ---"
