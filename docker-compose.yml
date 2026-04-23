@@ -1,40 +1,4 @@
-# Campus IoT - Docker Compose
-# Spins up:
-#   1. Eclipse Mosquitto (MQTT broker)
-#   2. campus_engine     (Python simulation engine)
-#   3. campus_dashboard  (Streamlit UI)
-# All services share the 'iot_net' bridge network.
-
-# ── Node-RED floor worker template ──────────────────────────────────
-# build: is intentionally NOT in this anchor — only nodered_floor_01 defines it.
-# All other floor services inherit the image tag and skip the redundant build step,
-# which prevents BuildKit from trying to tag the same image name in parallel.
-x-nodered-base: &nodered-base
-  image: dic_iot-nodered_worker:latest
-  init: true
-  stop_grace_period: 15s
-  networks:
-    - iot_net
-  deploy:
-    resources:
-      limits:
-        memory: 1G
-  depends_on:
-    mosquitto:
-      condition: service_healthy
-    engine:
-      condition: service_started
-    mytb:
-      condition: service_started
-  restart: unless-stopped
-
-x-nodered-env: &nodered-env
-  TZ: Africa/Cairo
-  MQTT_HOST: mosquitto
-  MQTT_PORT: "8883"
-  COAP_HOST: campus_engine
-  NODE_OPTIONS: "--max-old-space-size=1024"
-
+﻿
 services:
   mosquitto:
     image: eclipse-mosquitto:2
@@ -237,10 +201,26 @@ services:
       - ./node-red/f10:/data
       - ./certs:/certs:ro
     environment:
-      <<: *nodered-env
-      FLOOR_NUMBER: "10"
-      TB_ACCESS_TOKEN: ${GATEWAY_TOKEN_10}
-      FLOW_FILE: "flow_floor10.json"
+      TZ: Africa/Cairo
+      NODE_RED_FLOOR_COUNT: 10
+      NODE_RED_WORKER_IMAGE: dic_iot-nodered_custom:latest
+      NODE_RED_WORKER_PREFIX: nodered_floor
+      NODE_RED_WORKER_PORT_BASE: 1891
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 8883
+      NODE_OPTIONS: --max-old-space-size=2048
+      COAP_HOST: campus_engine
+      FLOOR_NUMBER: 0
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN}
+      TB_GATEWAY_CLIENT_ID: nodered_master_gw
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+    depends_on:
+      - mosquitto
+      - engine
+    restart: unless-stopped
 
   mytb:
     container_name: mytb
@@ -253,7 +233,11 @@ services:
       - "5683-5688:5683-5688/udp"
     environment:
       TB_QUEUE_TYPE: in-memory
-      JAVA_OPTS: "-Xms1G -Xmx2G"
+      JAVA_OPTS: "-Xms2G -Xmx4G"
+      MQTT_SSL_ENABLED: "true"
+      MQTT_SSL_CREDENTIALS_TYPE: PEM
+      MQTT_SSL_PEM_CERT: /certs/mytb.crt
+      MQTT_SSL_PEM_KEY: /certs/mytb.key
     deploy:
       resources:
         limits:
@@ -263,6 +247,7 @@ services:
     volumes:
       - ~/.mytb-data:/data
       - ~/.mytb-logs:/var/log/thingsboard
+      - ./certs:/certs:ro
     depends_on:
       mosquitto:
         condition: service_healthy
