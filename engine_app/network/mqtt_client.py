@@ -35,7 +35,9 @@ class MQTTClient:
                  client_cert=None, client_key=None,
                  username=None, password=None,
                  expected_floor=None,
-                 will=None):
+                 will=None,
+                 client_id=None,
+                 clean_session=False):
         self.host = host
         self.port = port
         self.ca_cert = ca_cert
@@ -46,6 +48,8 @@ class MQTTClient:
         # If set, inbound messages are checked: topic floor must match this value.
         self.expected_floor = expected_floor
         self.will = will
+        self.client_id = client_id
+        self.clean_session = clean_session
         self.queue = asyncio.Queue()
         self.subscriptions = []
 
@@ -61,7 +65,10 @@ class MQTTClient:
     async def publish_loop(self, client):
         while True:
             t, p = await self.queue.get()
-            await client.publish(t, payload=p, qos=2)
+            info = await client.publish(t, payload=p, qos=2)
+            mid = getattr(info, "mid", None)
+            if "/cmd/" in t or "/ack/" in t:
+                log.info("mqtt outbound qos=2 topic=%s mid=%s", t, mid)
 
     async def subscribe_loop(self, client):
         for topic_filter, _ in self.subscriptions:
@@ -70,6 +77,13 @@ class MQTTClient:
         async for msg in client.messages:
             topic = str(msg.topic)
             payload = msg.payload.decode()
+            qos = getattr(msg, "qos", None)
+            dup = bool(getattr(msg, "dup", False))
+
+            if dup:
+                log.warning("mqtt inbound DUP=1 qos=%s topic=%s", qos, topic)
+            elif qos == 2 and ("/cmd/" in topic or "/ack/" in topic):
+                log.info("mqtt inbound qos=2 DUP=0 topic=%s", topic)
 
             # Application-level floor validation (defense-in-depth)
             if self.expected_floor is not None:
@@ -106,12 +120,16 @@ class MQTTClient:
                     username=self.username,
                     password=self.password,
                     will=self.will,
+                    identifier=self.client_id,
+                    clean_session=self.clean_session,
                 ) as c:
                     log.info(
-                        "broker connected %s:%d tls=%s mtls=%s",
+                        "broker connected %s:%d tls=%s mtls=%s client_id=%s clean_session=%s",
                         self.host, self.port,
                         tls_ctx is not None,
                         self.client_cert is not None,
+                        self.client_id,
+                        self.clean_session,
                     )
                     try:
                         async with asyncio.TaskGroup() as tg:

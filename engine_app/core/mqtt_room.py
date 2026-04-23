@@ -61,7 +61,9 @@ class MQTT_room:
             client_cert=env.get("mqtt_client_cert"),
             client_key=env.get("mqtt_client_key"),
             expected_floor=f"{floor:02d}",
-            will=lwt
+            will=lwt,
+            client_id=self.id,
+            clean_session=False,
         )
         self.register_actuator_subscriptions()
 
@@ -74,6 +76,23 @@ class MQTT_room:
         self.fault_type = None
         self.fault_duration = 0
         self.fault_start_time = 0
+        self.processed_commands = {}
+        self.processed_commands_ttl_seconds = int(env.get("processed_commands_ttl", 600))
+
+    def _mark_command_seen(self, command_id):
+        now = time.time()
+        expired = [
+            seen_id for seen_id, ts in self.processed_commands.items()
+            if now - ts > self.processed_commands_ttl_seconds
+        ]
+        for seen_id in expired:
+            del self.processed_commands[seen_id]
+
+        if command_id in self.processed_commands:
+            return True
+
+        self.processed_commands[command_id] = now
+        return False
 
     def _sync_state(self):
         self.state["room_id"] = self.id
@@ -116,9 +135,21 @@ class MQTT_room:
                 log.warning("invalid hvac mode for %s: %s", self.id, mode)
                 return
 
+            command_id = data.get("command_id")
+            if command_id and self._mark_command_seen(command_id):
+                log.warning("duplicate hvac command ignored for %s command_id=%s", self.id, command_id)
+                await self.broker.publish_json(
+                    room_hvac_applied_ack_topic(self.base_topic),
+                    {
+                        "room_id": self.id,
+                        "hvac_mode": self.hvac,
+                        "command_id": command_id,
+                    },
+                )
+                return
+
             self.hvac = mode
             self.refresh_state()
-            command_id = data.get("command_id")
             await self.broker.publish_json(
                 room_hvac_applied_ack_topic(self.base_topic),
                 {
@@ -145,9 +176,21 @@ class MQTT_room:
                 log.warning("light dimmer out of range for %s: %s", self.id, dimmer_value)
                 return
 
+            command_id = data.get("command_id")
+            if command_id and self._mark_command_seen(command_id):
+                log.warning("duplicate light_dimmer command ignored for %s command_id=%s", self.id, command_id)
+                await self.broker.publish_json(
+                    room_light_dimmer_applied_ack_topic(self.base_topic),
+                    {
+                        "room_id": self.id,
+                        "lighting_dimmer": self.dimmer,
+                        "command_id": command_id,
+                    },
+                )
+                return
+
             self.dimmer = dimmer_value
             self.refresh_state()
-            command_id = data.get("command_id")
             await self.broker.publish_json(
                 room_light_dimmer_applied_ack_topic(self.base_topic),
                 {

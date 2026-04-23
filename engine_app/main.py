@@ -89,6 +89,8 @@ async def run_engine():
         ca_cert=env["mqtt_ca_cert"],
         client_cert=env.get("mqtt_client_cert"),
         client_key=env.get("mqtt_client_key"),
+        client_id="campus-engine-core",
+        clean_session=False,
     )
     state_flush_event = asyncio.Event()
     pending_fleet_acks = {}

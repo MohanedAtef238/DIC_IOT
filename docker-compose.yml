@@ -132,7 +132,7 @@ services:
       mosquitto:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "bash", "-c", "(echo > /dev/tcp/localhost/8080) >/dev/null 2>&1"]
+      test: ["CMD", "bash", "-c", "(echo > /dev/tcp/localhost/9090) >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 12
