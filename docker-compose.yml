@@ -125,8 +125,8 @@ services:
     networks:
       - iot_net
     volumes:
-      - ~/.mytb-data:/data
-      - ~/.mytb-logs:/var/log/thingsboard
+      - mytb_data:/data
+      - mytb_logs:/var/log/thingsboard
       - ./certs:/certs:ro
     depends_on:
       mosquitto:
@@ -168,6 +168,8 @@ volumes:
   mosquitto_data:
   mosquitto_log:
   engine_data:
+  mytb_data:
+  mytb_logs:
   # tb-gw-logs:
   #   name: tb-gw-logs
   # tb-gw-extensions:

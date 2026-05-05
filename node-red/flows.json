@@ -101,6 +101,20 @@
         "sessionExpiry": ""
     },
     {
+        "id": "0136b402d12a6338",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "/certs/ca.crt",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": true,
+        "alpnprotocol": ""
+    },
+    {
         "id": "tb_direct_broker",
         "type": "mqtt-broker",
         "name": "ThingsBoard Gateway",
@@ -131,20 +145,6 @@
         "willMsg": {},
         "userProps": "",
         "sessionExpiry": ""
-    },
-    {
-        "id": "0136b402d12a6338",
-        "type": "tls-config",
-        "name": "",
-        "cert": "",
-        "key": "",
-        "ca": "/certs/ca.crt",
-        "certname": "",
-        "keyname": "",
-        "caname": "",
-        "servername": "",
-        "verifyservercert": true,
-        "alpnprotocol": ""
     },
     {
         "id": "mqtt_subscribe_trigger",
@@ -217,8 +217,8 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "Map MQTT to TB",
-        "func": "let payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('MQTT payload parse failed: ' + e.message, msg);\n        return null;\n    }\n}\nif (!payload || !payload.deviceName) return null;\n\nconst hvac = payload.hvac_mode;\nconst telemetry = JSON.stringify({\n    [payload.deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: payload.temperature,\n                humidity: payload.humidity,\n                occupancy: payload.occupancy,\n                light_level: payload.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: payload.lighting_dimmer\n            }\n        }\n    ]\n});\n\nconst connect = JSON.stringify({ device: payload.deviceName });\nreturn [\n    { payload: telemetry },\n    { payload: connect },\n    { payload: payload }\n];",
-        "outputs": 3,
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('MQTT payload parse failed: ' + e.message, msg);\n        return null;\n    }\n}\nif (!payload || !payload.deviceName) return null;\n\nconst hvac = payload.hvac_mode;\nconst telemetry = JSON.stringify({\n    [payload.deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: payload.temperature,\n                humidity: payload.humidity,\n                occupancy: payload.occupancy,\n                light_level: payload.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: payload.lighting_dimmer\n            }\n        }\n    ]\n});\n\nconst connect = JSON.stringify({ device: payload.deviceName });\nconst match = payload.deviceName.match(/r(\\d+)/i);\nconst roomNumber = (match ? parseInt(match[1], 10) : 0)%20;\nconst attributes = JSON.stringify({\n    [payload.deviceName]: {\n        polygonIndex: roomNumber\n    }\n});\n\nreturn [\n    { payload: telemetry },\n    { payload: connect },\n    { payload: payload },\n    { payload: attributes }\n];",
+        "outputs": 4,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
@@ -233,6 +233,9 @@
             ],
             [
                 "d69534778053eeda"
+            ],
+            [
+                "tb_gateway_attributes"
             ]
         ]
     },
@@ -307,8 +310,8 @@
         "type": "function",
         "z": "6db520c8e77fa5c3",
         "name": "Map CoAP to TB",
-        "func": "let data;\nif (typeof msg.payload === 'object' && !Buffer.isBuffer(msg.payload)) {\n    data = msg.payload;\n} else {\n    const raw = Buffer.isBuffer(msg.payload) ? msg.payload.toString('utf8') : msg.payload;\n    try {\n        data = JSON.parse(raw);\n    } catch (e) {\n        node.error('CoAP JSON parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst deviceName = data.metadata.sensor_id + '-COAP';\nconst hvac = data.actuators.hvac_mode;\nconst telemetry = JSON.stringify({\n    [deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: data.sensors.temperature,\n                humidity: data.sensors.humidity,\n                occupancy: data.sensors.occupancy,\n                light_level: data.sensors.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: data.actuators.lighting_dimmer\n            }\n        }\n    ]\n});\nconst connect = JSON.stringify({ device: deviceName });\nreturn [\n    { payload: telemetry },\n    { payload: connect },\n    { payload: data }\n];",
-        "outputs": 3,
+        "func": "let data;\nif (typeof msg.payload === 'object' && !Buffer.isBuffer(msg.payload)) {\n    data = msg.payload;\n} else {\n    const raw = Buffer.isBuffer(msg.payload) ? msg.payload.toString('utf8') : msg.payload;\n    try {\n        data = JSON.parse(raw);\n    } catch (e) {\n        node.error('CoAP JSON parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst deviceName = data.metadata.sensor_id + '-COAP';\nconst hvac = data.actuators.hvac_mode;\nconst telemetry = JSON.stringify({\n    [deviceName]: [\n        {\n            ts: Date.now(),\n            values: {\n                temperature: data.sensors.temperature,\n                humidity: data.sensors.humidity,\n                occupancy: data.sensors.occupancy,\n                light_level: data.sensors.light_level,\n                hvac_mode: hvac,\n                hvac_status: hvac,\n                lighting_dimmer: data.actuators.lighting_dimmer\n            }\n        }\n    ]\n});\nconst connect = JSON.stringify({ device: deviceName });\nconst match = deviceName.match(/r(\\d+)/i);\nconst roomNumber = (match ? parseInt(match[1], 10) : 0)%20;\nconst attributes = JSON.stringify({\n    [deviceName]: {\n        polygonIndex: roomNumber\n    }\n});\n\nreturn [\n    { payload: telemetry },\n    { payload: connect },\n    { payload: data },\n    { payload: attributes }\n];",
+        "outputs": 4,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
@@ -323,6 +326,9 @@
             ],
             [
                 "640523f04dce4820"
+            ],
+            [
+                "tb_gateway_attributes"
             ]
         ]
     },
@@ -501,6 +507,24 @@
         "statusType": "auto",
         "x": 720,
         "y": 800,
+        "wires": []
+    },
+    {
+        "id": "tb_gateway_attributes",
+        "type": "mqtt out",
+        "z": "6db520c8e77fa5c3",
+        "name": "ThingsBoard Gateway Attributes",
+        "topic": "v1/gateway/attributes",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 1300,
+        "y": 550,
         "wires": []
     },
     {
