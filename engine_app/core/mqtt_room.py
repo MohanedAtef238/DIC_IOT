@@ -21,6 +21,7 @@ class MQTT_room:
         # see .env
         self.alpha = env["alpha"]
         self.beta = env["beta"]
+        self.version = "1.0"
         self.outside = env["outside_temp"]
         self.interval = env["publish_interval"]
         self.fault_probability = env.get("fault_probability", 0.01)  # 1% chance of fault per tick
@@ -82,6 +83,7 @@ class MQTT_room:
         self.state["target_temp"] = self.target
         self.state["hvac_mode"] = self.hvac
         self.state["lighting_dimmer"] = self.dimmer
+        self.state["current_version"] = self.version
         self.state["last_update"] = int(time.time())
 
     def refresh_state(self):
@@ -102,6 +104,59 @@ class MQTT_room:
     def register_actuator_subscriptions(self):
         self.register_hvac_subscription()
         self.register_light_dimmer_subscription()
+        self.register_ota_subscription()
+
+    def register_ota_subscription(self):
+        import hashlib, json, time
+        
+        async def handle_ota(topic, payload):
+            try:
+                data = json.loads(payload)
+            except (json.JSONDecodeError, TypeError):
+                log.warning("invalid OTA JSON from %s", topic)
+                return
+
+            required_keys = ["config_data", "signature", "target_version", "target"]
+            if not all(k in data for k in required_keys):
+                return
+
+            target = data["target"]
+            allowed_targets = ["all", self.id, f"floor_{self.floor:02d}"]
+            if target not in allowed_targets:
+                return
+
+            received_config_str = data["config_data"]
+            calculated = hashlib.sha256(received_config_str.encode("utf-8")).hexdigest()
+            
+            if calculated == data["signature"]:
+                try:
+                    config_dict = json.loads(received_config_str)
+                    self.apply_ota_parameters(config_dict)
+                    self.version = str(data["target_version"])
+                    self._sync_state()
+                    
+                    await self.broker.publish_json(
+                        ota_ack_topic(),
+                        {
+                            "deviceName": self.id,
+                            "current_version": self.version
+                        }
+                    )
+                    log.info("OTA success: %s updated to version %s", self.id, self.version)
+                except Exception as e:
+                    log.error("failed to apply valid OTA config to %s: %s", self.id, e)
+            else:
+                await self.broker.publish_json(
+                    self.base_topic + "/telemetry",
+                    {
+                        "security_alert": "TAMPER_DETECTED",
+                        "room_id": self.id,
+                        "timestamp": int(time.time())
+                    }
+                )
+                log.warning("OTA tamper detected for %s! signature mismatch", self.id)
+
+        self.broker.subscribe(ota_global_topic(), handle_ota)
 
     def register_hvac_subscription(self):
         async def handle_hvac_command(topic, payload):
@@ -131,6 +186,24 @@ class MQTT_room:
 
         self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
         self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
+
+    def apply_ota_parameters(self, payload):
+        """Update physics parameters and version from OTA payload."""
+        try:
+            if "alpha" in payload:
+                self.alpha = float(payload["alpha"])
+            if "beta" in payload:
+                self.beta = float(payload["beta"])
+            if "version" in payload:
+                self.version = str(payload["version"])
+            
+            self._sync_state()
+            log.info("room %s applied OTA: alpha=%.3f, beta=%.3f, version=%s", 
+                     self.id, self.alpha, self.beta, self.version)
+            return True
+        except (ValueError, TypeError) as e:
+            log.warning("failed to apply OTA parameters to %s: %s", self.id, e)
+            return False
 
     def register_light_dimmer_subscription(self):
         async def handle_light_dimmer_command(topic, payload):
@@ -229,6 +302,9 @@ class MQTT_room:
             "light_level": self.lux,
             "hvac_mode": self.hvac.lower(),
             "lighting_dimmer": self.dimmer,
+            "current_version": self.version,
+            "alpha": self.alpha,
+            "beta": self.beta,
         }
 
     def sensor_messages(self):

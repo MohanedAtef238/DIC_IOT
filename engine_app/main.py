@@ -129,6 +129,70 @@ async def run_engine():
             state_flush_event.set()
             log.info("applied fleet hvac command %s to %d CoAP rooms", mode, updated)
 
+    async def handle_ota_update(topic, payload):
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError:
+            log.warning("invalid OTA JSON from %s", topic)
+            return
+
+        # Determine target from topic
+        # campus/b01/ota/config -> global
+        # campus/b01/f05/ota -> floor 05
+        # campus/b01/f05/r010/ota -> room b01-f05-r010
+        
+        parts = topic.split('/')
+        target_floor = None
+        target_room_id = None
+        
+        if len(parts) == 4 and parts[2] == "ota" and parts[3] == "config":
+            # Global
+            pass 
+        elif len(parts) == 4 and parts[2].startswith('f') and parts[3] == "ota":
+            # Floor
+            target_floor = int(parts[2][1:])
+        elif len(parts) == 5 and parts[4] == "ota":
+            # Room
+            target_room_id = f"b01-{parts[2]}-{parts[3]}"
+        else:
+            log.warning("unrecognized OTA topic structure: %s", topic)
+            return
+
+        # Parse config_data string into dict, then add target_version
+        import json as _json
+        try:
+            config_dict = _json.loads(data["config_data"])
+        except (KeyError, _json.JSONDecodeError, TypeError):
+            log.warning("OTA payload missing or invalid config_data from %s", topic)
+            return
+        config_dict["version"] = str(data.get("target_version", ""))
+
+        # Also filter by "target" field in payload if present
+        payload_target = data.get("target", "all")
+
+        updated = 0
+        for r in all_rooms:
+            match = True
+            if target_floor is not None and r.floor != target_floor:
+                match = False
+            if target_room_id is not None:
+                clean_target_room_id = target_room_id.replace("-COAP", "").replace("-MQTT", "")
+                if r.id != clean_target_room_id:
+                    match = False
+            # If no topic-level targeting, use payload target field
+            if target_floor is None and target_room_id is None:
+                clean_payload_target = payload_target.replace("-COAP", "").replace("-MQTT", "")
+                if clean_payload_target not in ("all", r.id, f"floor_{r.floor:02d}"):
+                    match = False
+
+            if match:
+                if r.apply_ota_parameters(config_dict):
+                    updated += 1
+
+        if updated:
+            state_flush_event.set()
+            log.info("OTA update from %s applied to %d rooms", topic, updated)
+
 
     def persist_all_states():
         for room in all_rooms:
@@ -182,6 +246,9 @@ async def run_engine():
     # one persistence task + two tasks per room (room broker + room publish loop)
     engine_broker.subscribe(all_room_hvac_applied_ack_topics(), handle_hvac_applied_ack)
     engine_broker.subscribe(fleet_hvac_command_topic(), handle_fleet_hvac_command)
+    engine_broker.subscribe(ota_global_topic(), handle_ota_update)
+    engine_broker.subscribe(ota_floor_wildcard(), handle_ota_update)
+    engine_broker.subscribe(ota_room_wildcard(), handle_ota_update)
     tasks = [
         asyncio.create_task(engine_broker.run()),
         asyncio.create_task(persist_states_loop()),

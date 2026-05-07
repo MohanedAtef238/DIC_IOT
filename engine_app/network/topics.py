@@ -45,3 +45,18 @@ def room_heartbeat():
 
 def room_lwt_topic(base_topic):
     return f"{base_topic}/lwt"
+
+def ota_global_topic():
+    return "campus/b01/ota/config"
+
+def ota_floor_wildcard():
+    return "campus/b01/+/ota"
+
+def ota_room_wildcard():
+    return "campus/b01/+/+/ota"
+
+def thingsboard_attributes_topic():
+    return "v1/devices/me/attributes"
+
+def ota_ack_topic():
+    return "campus/b01/ota/ack"

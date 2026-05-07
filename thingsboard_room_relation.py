@@ -1,23 +1,31 @@
 import requests
 import re
+import sys
 
 THINGSBOARD_URL = "http://localhost:8080"
-EMAIL = ""
-PASSWORD = ""
+# Using static token from provision_ota.py
+TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYWlsQG1haWwuY29tIiwidXNlcklkIjoiNTdkNmRlNzAtNDhhMS0xMWYxLThlZWItOTNiMTBiNzgyMDRjIiwic2NvcGVzIjpbIlRFTkFOVF9BRE1JTiJdLCJzZXNzaW9uSWQiOiIwODA0OTkxMC0yZjMxLTQ0NzAtOTY3NC0wZmZiNTgxMGNmZDQiLCJleHAiOjE3NzgxNjEyMjYsImlzcyI6InRoaW5nc2JvYXJkLmlvIiwiaWF0IjoxNzc4MTUyMjI2LCJmaXJzdE5hbWUiOiJtYWlsIiwibGFzdE5hbWUiOiJtYWlsIiwiZW5hYmxlZCI6ZmFsc2UsImlzUHVibGljIjpmYWxzZSwidGVuYW50SWQiOiI1MTJmNGI5MC00ODlmLTExZjEtOWJjYS0wZDUyNzMyM2I2M2QiLCJjdXN0b21lcklkIjoiMTM4MTQwMDAtMWRkMi0xMWIyLTgwODAtODA4MDgwODA4MDgwIn0.SMZrqSv_lecjLVJtcL6Go3Bwwx9NA9ARKOXzcb2Dgji7Y_ZWM1ynNBq6KWhPfMWrLb90kjwyrbMpNo6FIWvajw"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-Authorization": f"Bearer {TOKEN}"
+}
 
 
 # ---------------------------
-# LOGIN
+# TOKEN VALIDATION (Flow from provision_ota.py)
 # ---------------------------
-def login():
-    url = f"{THINGSBOARD_URL}/api/auth/login"
-    payload = {
-        "username": EMAIL,
-        "password": PASSWORD
-    }
-
-    res = requests.post(url, json=payload)
-    return res.json()["token"]
+def check_token():
+    print("Connecting to ThingsBoard...")
+    try:
+        res = requests.get(f"{THINGSBOARD_URL}/api/auth/user", headers=headers)
+        if res.status_code != 200:
+            print("Provided token is invalid or expired.")
+            sys.exit(1)
+        print("Token verified.")
+    except Exception as e:
+        print(f"Error connecting: {e}")
+        sys.exit(1)
 
 
 # ---------------------------
@@ -89,12 +97,8 @@ def create_relation(from_id, to_id, headers):
 # ---------------------------
 # MAIN
 # ---------------------------
-token = login()
-
-headers = {
-    "Content-Type": "application/json",
-    "X-Authorization": f"Bearer {token}"
-}
+if __name__ == "__main__":
+    check_token()
 
 devices = get_all_devices(headers)
 rooms = get_all_rooms(headers)

@@ -28,6 +28,7 @@ class CoAP_room:
         # see .env
         self.alpha = env["alpha"]
         self.beta = env["beta"]
+        self.version = "1.0"
         self.outside = env["outside_temp"]
         self.interval = env["publish_interval"]
         self.fault_probability = env.get("fault_probability", 0.01)  # 1% chance of fault per tick
@@ -87,6 +88,7 @@ class CoAP_room:
         self.state["target_temp"] = self.target
         self.state["hvac_mode"] = self.hvac
         self.state["lighting_dimmer"] = self.dimmer
+        self.state["current_version"] = self.version
         self.state["last_update"] = int(time.time())
 
     def refresh_state(self):
@@ -149,6 +151,24 @@ class CoAP_room:
         log.info("room light dimmer updated %s -> %s", self.id, dimmer_value)
         return True
 
+    def apply_ota_parameters(self, payload):
+        """Update physics parameters and version from OTA payload."""
+        try:
+            if "alpha" in payload:
+                self.alpha = float(payload["alpha"])
+            if "beta" in payload:
+                self.beta = float(payload["beta"])
+            if "version" in payload:
+                self.version = str(payload["version"])
+            
+            self._sync_state()
+            log.info("room %s applied OTA: alpha=%.3f, beta=%.3f, version=%s", 
+                     self.id, self.alpha, self.beta, self.version)
+            return True
+        except (ValueError, TypeError) as e:
+            log.warning("failed to apply OTA parameters to %s: %s", self.id, e)
+            return False
+
     def _inject_fault(self):
         if random.random() < self.fault_probability:
             fault_type = random.choice(["sensor_drift", "frozen_sensor", "telemetry_delay", "node_dropout"])
@@ -210,6 +230,9 @@ class CoAP_room:
                 "building": "b01",
                 "floor": self.floor,
                 "room": self.room_num,
+                "version": self.version,
+                "alpha": self.alpha,
+                "beta": self.beta,
                 "timestamp": int(time.time()),
             },
             "sensors": {
