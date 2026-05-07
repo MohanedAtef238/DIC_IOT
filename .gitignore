@@ -15,4 +15,3 @@ certs/*.srl
 __pycache__/
 *.pyc
 
-thingsboard_room_asset.py

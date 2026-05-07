@@ -1,8 +1,8 @@
 import requests
 
 TB_URL = "http://localhost:8080"   # change this
-USERNAME = "husseainshalaby6@gmail.com"
-PASSWORD = "Husseain@2003"
+USERNAME = ""
+PASSWORD = ""
 
 RELATION_TYPE = "Contains"
 

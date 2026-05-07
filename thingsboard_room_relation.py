@@ -2,8 +2,8 @@ import requests
 import re
 
 THINGSBOARD_URL = "http://localhost:8080"
-EMAIL = "husseainshalaby6@gmail.com"
-PASSWORD = "Husseain@2003"
+EMAIL = ""
+PASSWORD = ""
 
 
 # ---------------------------
