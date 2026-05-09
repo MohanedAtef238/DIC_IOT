@@ -12,6 +12,9 @@ from network.topics import *
 from storage.sqlite_store import SQLiteRoomStore
 
 
+load_dotenv()
+
+
 _log_level_name = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 logging.basicConfig(level=_log_level, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
@@ -19,7 +22,6 @@ log = logging.getLogger("engine")
 
 
 def get_env():
-    load_dotenv()
     conf = {}
     conf["floors"]    = int(os.environ["NUM_FLOORS"])
     conf["per_floor"] = int(os.environ["ROOMS_PER_FLOOR"])
