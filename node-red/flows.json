@@ -1,5 +1,13 @@
 [
     {
+        "id": "4de071ee91dab2f5",
+        "type": "tab",
+        "label": "Recovered Nodes",
+        "disabled": false,
+        "info": "The nodes on this flow were missing a valid flow id when they were imported. They have been added to this flow so you can either restore or delete them.",
+        "env": []
+    },
+    {
         "id": "cee4ba86b582e75a",
         "type": "tab",
         "label": "Floor Telemetry",
@@ -231,9 +239,30 @@
         "willPayload": "",
         "willMsg": {},
         "userProps": "",
-        "sessionExpiry": "",
-        "username": "${TB_ACCESS_TOKEN}",
-        "password": ""
+        "sessionExpiry": ""
+    },
+    {
+        "id": "c3a4178786dbba92",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "@flowfuse/node-red-dashboard": "1.30.2",
+            "node-red-contrib-coap": "0.8.0"
+        }
+    },
+    {
+        "id": "silencer_node",
+        "type": "catch",
+        "z": "4de071ee91dab2f5",
+        "name": "Error Silencer",
+        "scope": null,
+        "uncaught": false,
+        "x": 100,
+        "y": 100,
+        "wires": [
+            []
+        ]
     },
     {
         "id": "3c2aea3be9521a75",
@@ -667,11 +696,7 @@
         "broker": "73b48127bf2649bd",
         "x": 710,
         "y": 880,
-        "wires": [
-            [
-                "dbg_ota_d9f53dff"
-            ]
-        ]
+        "wires": []
     },
     {
         "id": "141517246f685b35",
@@ -727,11 +752,292 @@
         "broker": "tb_direct_broker",
         "x": 750,
         "y": 980,
+        "wires": []
+    },
+    {
+        "id": "telemetry_debug",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "TB Telemetry Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1100,
+        "y": 150,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_844cfb3d",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: TB Attrs IN",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 200,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_f342e19c",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: Filter OTA OUT",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_d9f53dff",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: Publish OTA Rooms",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_14151724",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: Room Ack IN",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 200,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_474e5dae",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: Format Version OUT",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "dbg_ota_d545b9bd",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "Debug: Update TB version",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "floor_ota_telemetry_out",
+        "type": "mqtt out",
+        "z": "cee4ba86b582e75a",
+        "name": "Publish Floor OTA Ack Count",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 710,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "gw_attr_router",
+        "type": "function",
+        "z": "cee4ba86b582e75a",
+        "name": "Route GW Attr to Room Cmd",
+        "func": "\nlet body = msg.payload;\nlet deviceName = body.device;\nlet data = body.data || {};\nif (data.shared) {\n    // ThingsBoard gateway may wrap shared attrs under data.shared\n    data = data.shared;\n}\nif (!deviceName) return null;\n\nlet cmdPayload = null;\nlet topic = null;\nconst deviceMatch = deviceName.match(/^b01-f(\\d{2})-r(\\d{3})$/);\nif (!deviceMatch) return null;\n\nif (data.hvac_command) {\n    cmdPayload = { hvac_mode: data.hvac_command };\n    topic = `campus/b01/cmd/${deviceName}`;\n} else if (data.dimmer_command) {\n    cmdPayload = { lighting_dimmer: parseInt(data.dimmer_command, 10) };\n    topic = `campus/b01/f${deviceMatch[1]}/r${deviceMatch[2]}/actuator/light_dimmer`;\n}\nif (!cmdPayload) return null;\n\nnode.log(`Attr for ${deviceName} -> ${topic}: ${JSON.stringify(cmdPayload)}`);\n\nreturn {\n    topic: topic,\n    payload: JSON.stringify({\n        ...cmdPayload,\n        device_name: deviceName,\n        transport: 'mqtt'\n    })\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 500,
         "wires": [
             [
-                "dbg_ota_d545b9bd"
+                "debug_attr_all"
             ]
         ]
+    },
+    {
+        "id": "debug_attr_all",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "DEBUG ATTR",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 400,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "gw_attr_worker_in",
+        "type": "mqtt in",
+        "z": "cee4ba86b582e75a",
+        "name": "TB GW Attr Listener",
+        "topic": "v1/gateway/attributes",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "tb_direct_broker",
+        "inputs": 0,
+        "x": 150,
+        "y": 500,
+        "wires": [
+            [
+                "gw_attr_router",
+                "debug_attr_all"
+            ]
+        ]
+    },
+    {
+        "id": "floor_attr_listener",
+        "type": "mqtt in",
+        "z": "cee4ba86b582e75a",
+        "name": "TB Floor Attrs (Commands)",
+        "topic": "v1/devices/me/attributes",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "tb_direct_broker",
+        "inputs": 0,
+        "x": 190,
+        "y": 560,
+        "wires": [
+            [
+                "floor_attr_router",
+                "debug_floor_attr_in"
+            ]
+        ]
+    },
+    {
+        "id": "floor_attr_router",
+        "type": "function",
+        "z": "cee4ba86b582e75a",
+        "name": "Route Floor Attrs to Room Cmd",
+        "func": "\nconst floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\nconst floorPad = String(floor).padStart(2, '0');\n\nlet payload = msg.payload;\nif (payload && payload.shared) {\n    payload = payload.shared;\n}\n\nlet messages = [];\n\nfor (let key in payload) {\n    const match = key.match(/^(hvac_mode|target_temp|lighting_dimmer)_r(\\d+)$/);\n    if (match) {\n        const cmdType = match[1];\n        const roomNum = match[2];\n        const value = payload[key];\n        \n        const roomIndex = parseInt(roomNum, 10);\n        const floorOffset = (floor - 1) * 20;\n        const realRoomNum = floorOffset + roomIndex;\n        const realRoomStr = String(realRoomNum).padStart(3, '0');\n        \n        let deviceName = `b01-f${floorPad}-r${realRoomStr}`;\n        if ((roomIndex - 1) % 2 !== 0) {\n            deviceName += \"-COAP\";\n        }\n        \n        let cmdPayload = {};\n        let topic = `campus/b01/cmd/${deviceName}`;\n        \n        if (cmdType === 'hvac_mode') {\n            cmdPayload = { hvac_mode: value };\n        } else if (cmdType === 'target_temp') {\n            cmdPayload = { target_temp: value };\n        } else if (cmdType === 'lighting_dimmer') {\n            cmdPayload = { lighting_dimmer: value };\n            topic = `campus/b01/f${floorPad}/r${realRoomStr}/actuator/light_dimmer`;\n        }\n        \n        node.log(`Floor Attr for ${key} -> ${deviceName}: ${JSON.stringify(cmdPayload)}`);\n        \n        messages.push({\n            topic: topic,\n            payload: JSON.stringify({\n                ...cmdPayload,\n                device_id: deviceName,\n                transport: deviceName.includes('COAP') ? 'coap' : 'mqtt'\n            })\n        });\n    }\n}\n\nreturn [messages];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 560,
+        "wires": [
+            [
+                "debug_attr_all"
+            ]
+        ]
+    },
+    {
+        "id": "debug_floor_attr_in",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "DEBUG FLOOR ATTR IN",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 450,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "tb_catch_all",
+        "type": "mqtt in",
+        "z": "cee4ba86b582e75a",
+        "name": "TB CATCH-ALL",
+        "topic": "#",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "tb_direct_broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "debug_catch_all"
+            ]
+        ]
+    },
+    {
+        "id": "debug_catch_all",
+        "type": "debug",
+        "z": "cee4ba86b582e75a",
+        "name": "DEBUG EVERYTHING TB",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 160,
+        "wires": []
     },
     {
         "id": "daabc8bff37f80fe",
@@ -882,9 +1188,7 @@
         "x": 340,
         "y": 440,
         "wires": [
-            [
-                "a3384f949372a631"
-            ]
+            []
         ]
     },
     {
@@ -1095,187 +1399,6 @@
         "wires": []
     },
     {
-        "id": "c3a4178786dbba92",
-        "type": "global-config",
-        "env": [],
-        "modules": {
-            "node-red-dashboard": "3.6.6",
-            "@flowfuse/node-red-dashboard": "1.30.2",
-            "node-red-contrib-coap": "0.8.0"
-        }
-    },
-    {
-        "id": "silencer_node",
-        "type": "catch",
-        "name": "Error Silencer",
-        "scope": null,
-        "uncaught": false,
-        "x": 100,
-        "y": 100,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "telemetry_debug",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "TB Telemetry Debug",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1100,
-        "y": 150,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_844cfb3d",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: TB Attrs IN",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 200,
-        "y": 940,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_f342e19c",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: Filter OTA OUT",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 460,
-        "y": 940,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_d9f53dff",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: Publish OTA Rooms",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 940,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_14151724",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: Room Ack IN",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 200,
-        "y": 1040,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_474e5dae",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: Format Version OUT",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 460,
-        "y": 1040,
-        "wires": []
-    },
-    {
-        "id": "dbg_ota_d545b9bd",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "Debug: Update TB version",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 1040,
-        "wires": []
-    },
-    {
-        "id": "floor_ota_telemetry_out",
-        "type": "mqtt out",
-        "z": "cee4ba86b582e75a",
-        "name": "Publish Floor OTA Ack Count",
-        "topic": "v1/devices/me/telemetry",
-        "qos": "1",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "tb_direct_broker",
-        "x": 710,
-        "y": 1080,
-        "wires": []
-    },
-    {
-        "id": "gw_attr_router",
-        "type": "function",
-        "z": "cee4ba86b582e75a",
-        "name": "Route GW Attr to Room Cmd",
-        "func": "\nlet body = msg.payload;\nlet deviceName = body.device;\nlet data = body.data || {};\nif (data.shared) {\n    // ThingsBoard gateway may wrap shared attrs under data.shared\n    data = data.shared;\n}\nif (!deviceName) return null;\n\nlet cmdPayload = null;\nlet topic = null;\nconst deviceMatch = deviceName.match(/^b01-f(\\d{2})-r(\\d{3})$/);\nif (!deviceMatch) return null;\n\nif (data.hvac_command) {\n    cmdPayload = { hvac_mode: data.hvac_command };\n    topic = `campus/b01/cmd/${deviceName}`;\n} else if (data.dimmer_command) {\n    cmdPayload = { lighting_dimmer: parseInt(data.dimmer_command, 10) };\n    topic = `campus/b01/f${deviceMatch[1]}/r${deviceMatch[2]}/actuator/light_dimmer`;\n}\nif (!cmdPayload) return null;\n\nnode.log(`Attr for ${deviceName} -> ${topic}: ${JSON.stringify(cmdPayload)}`);\n\nreturn {\n    topic: topic,\n    payload: JSON.stringify({\n        ...cmdPayload,\n        device_name: deviceName,\n        transport: 'mqtt'\n    })\n};",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 500,
-        "wires": [
-            [
-                "7d1917eef0e5bc0c",
-                "debug_attr_all",
-                "debug_cmd_pub"
-            ]
-        ]
-    },
-    {
         "id": "debug_rpc_all",
         "type": "debug",
         "z": "e64a6d9b89c72938",
@@ -1291,147 +1414,20 @@
         "wires": []
     },
     {
-        "id": "debug_attr_all",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "DEBUG ATTR",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "x": 400,
-        "y": 460,
-        "wires": []
-    },
-    {
-        "id": "gw_attr_worker_in",
-        "type": "mqtt in",
-        "z": "cee4ba86b582e75a",
-        "name": "TB GW Attr Listener",
-        "topic": "v1/gateway/attributes",
-        "qos": "1",
-        "datatype": "json",
-        "broker": "tb_direct_broker",
-        "x": 150,
-        "y": 500,
-        "wires": [
-            [
-                "gw_attr_router",
-                "debug_attr_all"
-            ]
-        ]
-    },
-    {
         "id": "debug_cmd_pub",
         "type": "debug",
         "z": "e64a6d9b89c72938",
         "name": "CMD PUBLISHED",
         "active": true,
         "tosidebar": true,
-        "console": true,
+        "console": false,
         "tostatus": false,
         "complete": "true",
         "targetType": "full",
-        "x": 1300,
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
         "y": 300,
-        "wires": []
-    },
-    {
-        "id": "floor_attr_listener",
-        "type": "mqtt in",
-        "z": "cee4ba86b582e75a",
-        "name": "TB Floor Attrs (Commands)",
-        "topic": "v1/devices/me/attributes",
-        "qos": "1",
-        "datatype": "json",
-        "broker": "tb_direct_broker",
-        "inputs": 0,
-        "x": 190,
-        "y": 560,
-        "wires": [
-            [
-                "floor_attr_router",
-                "debug_floor_attr_in"
-            ]
-        ]
-    },
-    {
-        "id": "floor_attr_router",
-        "type": "function",
-        "z": "cee4ba86b582e75a",
-        "name": "Route Floor Attrs to Room Cmd",
-        "func": "\nconst floor = Number(env.get('FLOOR_NUMBER') || 0);\nif (floor === 0) return null;\nconst floorPad = String(floor).padStart(2, '0');\n\nlet payload = msg.payload;\nif (payload && payload.shared) {\n    payload = payload.shared;\n}\n\nlet messages = [];\n\nfor (let key in payload) {\n    const match = key.match(/^(hvac_mode|target_temp|lighting_dimmer)_r(\\d+)$/);\n    if (match) {\n        const cmdType = match[1];\n        const roomNum = match[2];\n        const value = payload[key];\n        \n        const roomIndex = parseInt(roomNum, 10);\n        const floorOffset = (floor - 1) * 20;\n        const realRoomNum = floorOffset + roomIndex;\n        const realRoomStr = String(realRoomNum).padStart(3, '0');\n        \n        let deviceName = `b01-f${floorPad}-r${realRoomStr}`;\n        if ((roomIndex - 1) % 2 !== 0) {\n            deviceName += \"-COAP\";\n        }\n        \n        let cmdPayload = {};\n        let topic = `campus/b01/cmd/${deviceName}`;\n        \n        if (cmdType === 'hvac_mode') {\n            cmdPayload = { hvac_mode: value };\n        } else if (cmdType === 'target_temp') {\n            cmdPayload = { target_temp: value };\n        } else if (cmdType === 'lighting_dimmer') {\n            cmdPayload = { lighting_dimmer: value };\n            topic = `campus/b01/f${floorPad}/r${realRoomStr}/actuator/light_dimmer`;\n        }\n        \n        node.log(`Floor Attr for ${key} -> ${deviceName}: ${JSON.stringify(cmdPayload)}`);\n        \n        messages.push({\n            topic: topic,\n            payload: JSON.stringify({\n                ...cmdPayload,\n                device_id: deviceName,\n                transport: deviceName.includes('COAP') ? 'coap' : 'mqtt'\n            })\n        });\n    }\n}\n\nreturn [messages];\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 450,
-        "y": 560,
-        "wires": [
-            [
-                "7d1917eef0e5bc0c",
-                "debug_attr_all",
-                "debug_cmd_pub"
-            ]
-        ]
-    },
-    {
-        "id": "debug_floor_attr_in",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "DEBUG FLOOR ATTR IN",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 450,
-        "y": 600,
-        "wires": []
-    },
-    {
-        "id": "tb_catch_all",
-        "type": "mqtt in",
-        "z": "cee4ba86b582e75a",
-        "name": "TB CATCH-ALL",
-        "topic": "#",
-        "qos": "0",
-        "datatype": "auto-detect",
-        "broker": "tb_direct_broker",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 150,
-        "y": 100,
-        "wires": [
-            [
-                "debug_catch_all"
-            ]
-        ]
-    },
-    {
-        "id": "debug_catch_all",
-        "type": "debug",
-        "z": "cee4ba86b582e75a",
-        "name": "DEBUG EVERYTHING TB",
-        "active": true,
-        "tosidebar": true,
-        "console": true,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 450,
-        "y": 100,
         "wires": []
     }
 ]

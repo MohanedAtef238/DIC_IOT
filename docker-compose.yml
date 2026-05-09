@@ -172,7 +172,9 @@ volumes:
   mosquitto_log:
   engine_data:
   mytb_data:
+    name: ${TB_DATA_VOLUME:-dic_iot_mytb_data}
   mytb_logs:
+    name: ${TB_LOGS_VOLUME:-dic_iot_mytb_logs}
   # tb-gw-logs:
   #   name: tb-gw-logs
   # tb-gw-extensions:
