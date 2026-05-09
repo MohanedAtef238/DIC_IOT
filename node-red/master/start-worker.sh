@@ -6,6 +6,8 @@ FLOW_SOURCE_PATH="${FLOW_SOURCE:-/data/flows.json}"
 FLOW_TARGET_PATH="${FLOW_TARGET:-/data/flows.json}"
 FLOW_CRED_SOURCE_PATH="${FLOW_CRED_SOURCE:-${FLOW_SOURCE_PATH%flows.json}flows_cred.json}"
 FLOW_CRED_TARGET_PATH="${FLOW_CRED_TARGET:-${FLOW_TARGET_PATH%flows.json}flows_cred.json}"
+SETTINGS_SOURCE_PATH="${SETTINGS_SOURCE:-${FLOW_SOURCE_PATH%flows.json}settings.js}"
+SETTINGS_TARGET_PATH="${SETTINGS_TARGET:-${FLOW_TARGET_PATH%flows.json}settings.js}"
 
 mkdir -p "$(dirname "$FLOW_TARGET_PATH")"
 
@@ -15,6 +17,10 @@ fi
 
 if [ -f "$FLOW_CRED_SOURCE_PATH" ]; then
 	cp "$FLOW_CRED_SOURCE_PATH" "$FLOW_CRED_TARGET_PATH"
+fi
+
+if [ -f "$SETTINGS_SOURCE_PATH" ]; then
+	cp "$SETTINGS_SOURCE_PATH" "$SETTINGS_TARGET_PATH"
 fi
 
 

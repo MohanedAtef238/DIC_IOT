@@ -70,3 +70,131 @@ Safe to keep defaults.
 | `DEFAULT_TARGET_TEMP` | `24.0` | Room setpoint (C) |
 | `PUBLISH_INTERVAL` | `5` | Seconds per tick |
 | `MQTT_HOST` / `MQTT_PORT` | `mosquitto` / `1883` | Broker address |
+
+## ThingsBoard Disk Growth
+
+When a ThingsBoard restore suddenly consumes multiple GB, the growth is usually in PostgreSQL data under the Docker volume backing `/data/db`, especially `/data/db/base` and `/data/db/pg_wal`.
+
+### Safe cleanup steps
+
+Do not delete files from `pg_wal` manually. PostgreSQL manages that directory itself.
+
+1. Inspect usage first:
+
+```bash
+docker system df -v
+docker ps -a --size
+docker exec mytb sh -c "du -sh /data/db/base /data/db/pg_wal /var/log/thingsboard 2>/dev/null"
+```
+
+2. Stop writes into ThingsBoard before cleanup:
+
+```bash
+docker compose stop nodered_master engine
+```
+
+3. Ask PostgreSQL to flush WAL naturally:
+
+```bash
+docker exec mytb psql -U postgres -d thingsboard -c "CHECKPOINT;"
+```
+
+4. If `pg_wal` stays large after restore, restart ThingsBoard cleanly:
+
+```bash
+docker compose restart mytb
+```
+
+5. Remove Docker build cache when you no longer need cached image layers:
+
+```bash
+docker builder prune -a
+```
+
+6. Remove unused Docker resources only if you are sure they are disposable:
+
+```bash
+docker system prune
+docker volume prune
+```
+
+7. Remove old restore volumes only after confirming they are not needed:
+
+```bash
+docker volume ls
+docker volume rm <old_tb_volume_name>
+```
+
+### Fresh-volume restore workflow
+
+This repo now supports overriding the ThingsBoard volume names with environment variables:
+
+- `TB_DATA_VOLUME`
+- `TB_LOGS_VOLUME`
+
+That lets you restore into a brand-new volume each time instead of inflating the current long-lived database.
+
+#### Start ThingsBoard on a fresh restore volume
+
+PowerShell:
+
+```powershell
+$env:TB_DATA_VOLUME="dic_iot_mytb_restore_20260509"
+$env:TB_LOGS_VOLUME="dic_iot_mytb_restore_20260509_logs"
+docker compose up -d mytb
+```
+
+Bash:
+
+```bash
+TB_DATA_VOLUME=dic_iot_mytb_restore_20260509 \
+TB_LOGS_VOLUME=dic_iot_mytb_restore_20260509_logs \
+docker compose up -d mytb
+```
+
+Then perform the restore inside that fresh ThingsBoard instance.
+
+#### Bring up the rest of the stack against the restored volume
+
+Use the same environment variables when starting the rest of the stack:
+
+PowerShell:
+
+```powershell
+docker compose up -d
+```
+
+Bash:
+
+```bash
+docker compose up -d
+```
+
+As long as `TB_DATA_VOLUME` and `TB_LOGS_VOLUME` stay set in that shell, the stack keeps using the restored TB data.
+
+#### Roll back safely to the original volume
+
+If the restore is bad, stop the stack and clear the overrides:
+
+PowerShell:
+
+```powershell
+docker compose down
+Remove-Item Env:TB_DATA_VOLUME -ErrorAction SilentlyContinue
+Remove-Item Env:TB_LOGS_VOLUME -ErrorAction SilentlyContinue
+docker compose up -d mytb
+```
+
+Bash:
+
+```bash
+docker compose down
+unset TB_DATA_VOLUME
+unset TB_LOGS_VOLUME
+docker compose up -d mytb
+```
+
+The original persistent volume names used by this repo are:
+
+- `dic_iot_mytb_data`
+- `dic_iot_mytb_logs`

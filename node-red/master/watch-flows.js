@@ -5,9 +5,17 @@ const crypto = require("crypto");
 const sourcePath = process.env.FLOW_SOURCE || "/data/flows.json";
 const targetPath = process.env.FLOW_TARGET || "/data/flows.json";
 const pollMs = Number.parseInt(process.env.FLOW_WATCH_INTERVAL_MS || "3000", 10);
+const nodeRedLogLevel = (process.env.NODE_RED_LOG_LEVEL || "warn").toLowerCase();
+const verboseLogs = new Set(["info", "debug", "trace"]).has(nodeRedLogLevel);
 
 let lastDigest = null;
 let syncing = false;
+
+function logInfo(...args) {
+  if (verboseLogs) {
+    console.log(...args);
+  }
+}
 
 function digest(text) {
   return crypto.createHash("sha256").update(text).digest("hex");
@@ -68,7 +76,7 @@ async function syncFlows() {
       const currentTarget = fs.existsSync(targetPath) ? readText(targetPath) : null;
       if (currentTarget !== sourceText) {
         writeText(targetPath, sourceText);
-        console.log(`[watch-flows] synced ${sourcePath} -> ${targetPath}`);
+        logInfo(`[watch-flows] synced ${sourcePath} -> ${targetPath}`);
       }
     }
 
@@ -80,7 +88,7 @@ async function syncFlows() {
 
     await reloadFlows(sourceText);
     lastDigest = nextDigest;
-    console.log(`[watch-flows] reloaded flows from ${sourcePath}`);
+    logInfo(`[watch-flows] reloaded flows from ${sourcePath}`);
   } catch (error) {
     console.warn("[watch-flows] sync failed:", error.message || error);
   } finally {

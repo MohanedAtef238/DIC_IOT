@@ -82,6 +82,7 @@ services:
       - ./certs:/certs:ro
     environment:
       TZ: Africa/Cairo
+      NODE_RED_LOG_LEVEL: warn
       NODE_RED_FLOOR_COUNT: 10
       NODE_RED_WORKER_IMAGE: dic_iot-nodered_custom:latest
       NODE_RED_WORKER_PREFIX: nodered_floor
@@ -128,6 +129,7 @@ services:
     volumes:
       - mytb_data:/data
       - mytb_logs:/var/log/thingsboard
+      - ./thingsboard/logback.xml:/usr/share/thingsboard/conf/logback.xml:ro
       - ./certs:/certs:ro
     depends_on:
       mosquitto:
@@ -170,7 +172,9 @@ volumes:
   mosquitto_log:
   engine_data:
   mytb_data:
+    name: ${TB_DATA_VOLUME:-dic_iot_mytb_data}
   mytb_logs:
+    name: ${TB_LOGS_VOLUME:-dic_iot_mytb_logs}
   # tb-gw-logs:
   #   name: tb-gw-logs
   # tb-gw-extensions:

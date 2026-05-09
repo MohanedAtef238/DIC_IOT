@@ -2,6 +2,14 @@ const Docker = require("dockerode");
 
 const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET || "/var/run/docker.sock" });
 const WORKER_CONFIG_VERSION = "2026-04-23-1";
+const nodeRedLogLevel = (process.env.NODE_RED_LOG_LEVEL || "warn").toLowerCase();
+const verboseLogs = new Set(["info", "debug", "trace"]).has(nodeRedLogLevel);
+
+function logInfo(...args) {
+  if (verboseLogs) {
+    console.log(...args);
+  }
+}
 
 function envInt(name, fallback) {
   const value = process.env[name];
@@ -17,10 +25,10 @@ function padFloor(floor) {
 async function ensureImage(image) {
   try {
     await docker.getImage(image).inspect();
-    console.log(`[bootstrap] image available: ${image}`);
+    logInfo(`[bootstrap] image available: ${image}`);
   } catch (error) {
     if (error.statusCode !== 404) throw error;
-    console.log(`[bootstrap] pulling image: ${image}`);
+    logInfo(`[bootstrap] pulling image: ${image}`);
     const stream = await docker.pull(image);
     await new Promise((resolve, reject) => {
       docker.modem.followProgress(stream, (err) => (err ? reject(err) : resolve()));
@@ -95,6 +103,7 @@ function desiredEnv(floor, token) {
     `MQTT_HOST=${process.env.MQTT_HOST || "mosquitto"}`,
     `MQTT_PORT=${process.env.MQTT_PORT || "8883"}`,
     `COAP_HOST=${process.env.COAP_HOST || "campus_engine"}`,
+    `NODE_RED_LOG_LEVEL=${process.env.NODE_RED_LOG_LEVEL || "warn"}`,
     `NODE_OPTIONS=${process.env.NODE_OPTIONS || ""}`,
     "FLOW_SOURCE=/shared/flows.json",
     "FLOW_TARGET=/data/flows.json",
@@ -118,7 +127,7 @@ async function recreateContainer(existing, createOptions) {
   const info = await existing.inspect();
   const running = info.State?.Running;
   if (running) {
-    console.log(`[bootstrap] removing outdated container: ${info.Name}`);
+    logInfo(`[bootstrap] removing outdated container: ${info.Name}`);
     await existing.remove({ force: true });
   } else {
     await existing.remove({ force: true });
@@ -128,7 +137,7 @@ async function recreateContainer(existing, createOptions) {
 }
 
 async function stopWorkers() {
-  console.log("[bootstrap] stopping and removing all floor workers...");
+  logInfo("[bootstrap] stopping and removing all floor workers...");
   const containers = await docker.listContainers({
     all: true,
     filters: JSON.stringify({ label: ["dic_iot.managed-by=nodered_master"] })
@@ -137,13 +146,13 @@ async function stopWorkers() {
   await Promise.all(containers.map(async (info) => {
     try {
       const container = docker.getContainer(info.Id);
-      console.log(`[bootstrap] removing container ${info.Names[0]}...`);
+      logInfo(`[bootstrap] removing container ${info.Names[0]}...`);
       await container.remove({ force: true });
     } catch (error) {
       console.error(`[bootstrap] error removing ${info.Names[0]}:`, error.message);
     }
   }));
-  console.log("[bootstrap] all floor workers removed.");
+  logInfo("[bootstrap] all floor workers removed.");
 }
 
 async function ensureWorker(networkName, image, prefix, floorCount, portBase, floor, sharedDataSource, sharedCertsSource) {
@@ -214,7 +223,7 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
 
     if (needsRecreate) {
       await recreateContainer(container, createOptions);
-      console.log(`[bootstrap] recreated ${name} for floor ${floor}`);
+      logInfo(`[bootstrap] recreated ${name} for floor ${floor}`);
       return;
     }
 
@@ -224,16 +233,16 @@ async function ensureWorker(networkName, image, prefix, floorCount, portBase, fl
       } catch (error) {
         if (error.statusCode !== 304) throw error;
       }
-      console.log(`[bootstrap] started existing ${name} for floor ${floor}`);
+      logInfo(`[bootstrap] started existing ${name} for floor ${floor}`);
       return;
     }
 
-    console.log(`[bootstrap] ${name} already running for floor ${floor}`);
+    logInfo(`[bootstrap] ${name} already running for floor ${floor}`);
   } catch (error) {
     if (error.statusCode !== 404) throw error;
     const container = await docker.createContainer(createOptions);
     await container.start();
-    console.log(`[bootstrap] created ${name} for floor ${floor}`);
+    logInfo(`[bootstrap] created ${name} for floor ${floor}`);
   }
 }
 
@@ -251,7 +260,7 @@ async function main() {
   const sharedDataSource = await getOwnDataSource();
   const sharedCertsSource = await getOwnCertsSource();
 
-  console.log(`[bootstrap] network=${networkName} floors=${floorCount} image=${image}`);
+  logInfo(`[bootstrap] network=${networkName} floors=${floorCount} image=${image}`);
   await ensureImage(image);
 
   for (let floor = 1; floor <= floorCount; floor += 1) {
