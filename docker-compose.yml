@@ -1,4 +1,4 @@
-﻿
+
 services:
   mosquitto:
     image: eclipse-mosquitto:2
@@ -92,6 +92,7 @@ services:
       COAP_HOST: campus_engine
       FLOOR_NUMBER: 0
       GATEWAY_TOKEN: ${GATEWAY_TOKEN}
+      TB_ACCESS_TOKEN: IBRcIz9BJ744780RiD2q
       TB_GATEWAY_CLIENT_ID: nodered_master_gw
     deploy:
       resources:

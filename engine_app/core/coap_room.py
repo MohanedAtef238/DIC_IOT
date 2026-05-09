@@ -242,7 +242,7 @@ class CoAP_room:
                 "light_level": self.lux,
             },
             "actuators": {
-                "hvac_mode": self.hvac.lower(),
+                "hvac_mode": self.hvac.upper(),
                 "lighting_dimmer": self.dimmer,
             },
         }

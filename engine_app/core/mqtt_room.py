@@ -185,6 +185,7 @@ class MQTT_room:
             log.info("room hvac updated %s -> %s", self.id, mode)
 
         self.broker.subscribe(room_hvac_command_topic(self.base_topic), handle_hvac_command)
+        self.broker.subscribe(f"campus/b01/cmd/{self.base_topic.split('/', 2)[2]}", handle_hvac_command)
         self.broker.subscribe(fleet_hvac_command_topic(), handle_hvac_command)
 
     def apply_ota_parameters(self, payload):
@@ -232,6 +233,7 @@ class MQTT_room:
             log.info("room light dimmer updated %s -> %s", self.id, dimmer_value)
 
         self.broker.subscribe(room_light_dimmer_command_topic(self.base_topic), handle_light_dimmer_command)
+        self.broker.subscribe(f"campus/b01/dimmer/{self.id}", handle_light_dimmer_command)
 
     def _inject_fault(self):
         if random.random() < self.fault_probability:
@@ -300,7 +302,7 @@ class MQTT_room:
             "humidity": self.humidity,
             "occupancy": self.occ,
             "light_level": self.lux,
-            "hvac_mode": self.hvac.lower(),
+            "hvac_mode": self.hvac.upper(),
             "lighting_dimmer": self.dimmer,
             "current_version": self.version,
             "alpha": self.alpha,

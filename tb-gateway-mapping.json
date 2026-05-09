@@ -215,6 +215,20 @@
         "methodFilter": "no-reply",
         "requestTopicExpression": "sensor/${deviceName}/request/${methodName}/${requestId}",
         "valueExpression": "${params}"
+      },
+      {
+        "type": "oneWay",
+        "deviceNameFilter": ".*",
+        "methodFilter": "hvac_mode",
+        "requestTopicExpression": "campus/b01/cmd/${deviceName}",
+        "valueExpression": "${params}"
+      },
+      {
+        "type": "oneWay",
+        "deviceNameFilter": ".*",
+        "methodFilter": "lighting_dimmer",
+        "requestTopicExpression": "campus/b01/dimmer/${deviceName}",
+        "valueExpression": "${params}"
       }
     ]
   }

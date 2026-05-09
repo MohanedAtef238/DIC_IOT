@@ -194,6 +194,44 @@ async def run_engine():
             log.info("OTA update from %s applied to %d rooms", topic, updated)
 
 
+
+
+    async def handle_individual_hvac_command(topic, payload):
+        # Handles campus/b01/cmd/b01-f01-r002 (with or without -COAP)
+        parts = topic.split('/')
+        device_id = parts[-1].replace("-COAP", "").replace("-MQTT", "")
+        
+        try:
+            data = json.loads(payload)
+            mode = str(data["hvac_mode"]).upper()
+        except: return
+
+        for room in coap_rooms:
+            if room.id == device_id:
+                if await room.apply_hvac_command(mode):
+                    state_flush_event.set()
+                    log.info("Proxied MQTT HVAC command %s to CoAP room %s", mode, room.id)
+                break
+
+
+    async def handle_individual_dimmer_command(topic, payload):
+        # campus/b01/f01/r002/actuator/light_dimmer
+        parts = topic.split('/')
+        floor_str = parts[2]
+        room_str = parts[3]
+        device_id = f"b01-{floor_str}-{room_str}"
+        
+        try:
+            data = json.loads(payload)
+            value = int(data["lighting_dimmer"])
+        except: return
+
+        for room in coap_rooms:
+            if room.id == device_id:
+                if await room.apply_light_dimmer_command(value):
+                    state_flush_event.set()
+                    log.info("Proxied MQTT Dimmer command %d to CoAP room %s", value, room.id)
+                break
     def persist_all_states():
         for room in all_rooms:
             state = room.state
@@ -249,6 +287,8 @@ async def run_engine():
     engine_broker.subscribe(ota_global_topic(), handle_ota_update)
     engine_broker.subscribe(ota_floor_wildcard(), handle_ota_update)
     engine_broker.subscribe(ota_room_wildcard(), handle_ota_update)
+    engine_broker.subscribe('campus/b01/cmd/+', handle_individual_hvac_command)
+    engine_broker.subscribe('campus/b01/+/+/actuator/light_dimmer', handle_individual_dimmer_command)
     tasks = [
         asyncio.create_task(engine_broker.run()),
         asyncio.create_task(persist_states_loop()),

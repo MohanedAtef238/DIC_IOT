@@ -1,7 +1,9 @@
 # Mosquitto ACL file
 
-# Global permissions (applies to anonymous users on port 1883)
+# Global permissions (applies to anonymous users on port 1883 and 9001)
 topic readwrite campus/b01/ota/#
+topic readwrite campus/b01/cmd/#
+topic readwrite campus/b01/+/+/actuator/#
 topic read campus/b01/f01/#
 topic read campus/b01/f02/#
 topic read campus/b01/f03/#
