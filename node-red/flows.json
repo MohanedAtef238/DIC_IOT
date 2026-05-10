@@ -599,19 +599,22 @@
         "type": "function",
         "z": "cee4ba86b582e75a",
         "name": "Send Averages",
-        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) return null;\nconst floorOffset = (floor - 1) * 20;\nconst floorstr = floor.toString().padStart(2, '0');\nlet rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0,\n    humidity_sum: 0,\n    occupancy: 0,\n    light_level: 0,\n    hvac_mode: 'off',\n    hvac_status: 'off',\n    lighting_dimmer: 0\n}));\n\nfor (let i = 0; i < 20; i++) {\n    const room = rooms[i];\n    const count = room.count || 0;\n    const roomId = floorOffset + i + 1;\n    let deviceName;\n    if(!(i%2)) {deviceName = `b01-f${floorstr}-r${roomId.toString().padStart(3, '0')}`}\n    else { deviceName = `b01-f${floorstr}-r${roomId.toString().padStart(3, '0')}-COAP` }\n\n    node.send({\n        payload: JSON.stringify({\n            [deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: {\n                        temperature: count > 0 ? room.temp_sum / count : 0,\n                        humidity: count > 0 ? room.humidity_sum / count : 0,\n                        occupancy: room.occupancy,\n                        light_level: room.light_level,\n                        hvac_mode: room.hvac_mode,\n                        hvac_status: room.hvac_status,\n                        lighting_dimmer: room.lighting_dimmer,\n                        alpha: room.alpha,\n                        beta: room.beta,\n                        current_version: room.version\n                    }\n                }\n            ]\n        })\n    });\n}\n\nflow.set(\"rooms\", undefined);\nreturn null;",
-        "outputs": 1,
+        "func": "const floor = Number(env.get(\"FLOOR_NUMBER\") || 0);\nif (floor === 0) return null;\n\nconst floorOffset = (floor - 1) * 20;\nconst floorstr = floor.toString().padStart(2, '0');\n\nlet rooms = flow.get(\"rooms\") || Array.from({ length: 20 }, () => ({\n    count: 0,\n    temp_sum: 0,\n    humidity_sum: 0,\n    occupancy: 0,\n    light_level: 0,\n    hvac_mode: 'off',\n    hvac_status: 'off',\n    lighting_dimmer: 0\n}));\n\nconst output1 = [];\nconst output2 = [];\n\nfor (let i = 0; i < 20; i++) {\n    const room = rooms[i];\n    const count = room.count || 0;\n    const roomId = floorOffset + i + 1;\n\n    let deviceName;\n\n    if (!(i % 2)) {\n        deviceName = `b01-f${floorstr}-r${roomId.toString().padStart(3, '0')}`;\n    } else {\n        deviceName = `b01-f${floorstr}-r${roomId.toString().padStart(3, '0')}-COAP`;\n    }\n\n    const values = {\n        temperature: count > 0 ? room.temp_sum / count : 0,\n        humidity: count > 0 ? room.humidity_sum / count : 0,\n        occupancy: room.occupancy,\n        light_level: room.light_level,\n        hvac_mode: room.hvac_mode,\n        hvac_status: room.hvac_status,\n        lighting_dimmer: room.lighting_dimmer,\n        alpha: room.alpha,\n        beta: room.beta,\n        current_version: room.version\n    };\n\n    output1.push({\n        payload: JSON.stringify({\n            [deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: values\n                }\n            ]\n        })\n    });\n\n    output2.push({\n        payload: JSON.stringify({\n            [deviceName]: {\n                hvac_mode: room.hvac_mode,\n                lighting_dimmer: room.lighting_dimmer,\n                alpha: room.alpha,\n                beta: room.beta,\n                current_version: room.version\n            }\n        })\n    });\n}\n\nflow.set(\"rooms\", undefined);\n\nreturn [output1, output2];",
+        "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 490,
-        "y": 740,
+        "x": 520,
+        "y": 680,
         "wires": [
             [
                 "9a3a48a66b32597a",
                 "abb58e212e9ce56b"
+            ],
+            [
+                "c92d97f6a1c80bb5"
             ]
         ]
     },
@@ -646,8 +649,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1300,
-        "y": 550,
+        "x": 1310,
+        "y": 520,
         "wires": []
     },
     {
@@ -1196,7 +1199,7 @@
         "type": "function",
         "z": "e64a6d9b89c72938",
         "name": "Handle MQTT Ack",
-        "func": "let payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('MQTT ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst commandId = payload && payload.command_id;\nif (!commandId) return null;\n\nconst pending = flow.get('pendingRpcAcks') || {};\nconst state = pending[commandId];\nif (!state) return null;\n\ndelete pending[commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - state.startedAt;\nconst ackValues = {\n    rtt_ms: rttMs\n};\nif (payload.hvac_mode !== undefined) {\n    ackValues.hvac_mode = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_status = String(payload.hvac_mode).toLowerCase();\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (state.requested !== undefined) {\n    ackValues.requested_value = state.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: state.deviceName,\n            id: state.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [state.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'mqtt-ack',\n            command_id: commandId,\n            device: state.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('MQTT ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst commandId = payload && payload.command_id;\nif (!commandId) return null;\n\nconst pending = flow.get('pendingRpcAcks') || {};\nconst state = pending[commandId];\nif (!state) return null;\n\ndelete pending[commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - state.startedAt;\nconst ackValues = {\n    rtt_ms: rttMs\n};\nif (payload.hvac_mode !== undefined) {\n    const hvacState = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_mode = hvacState;\n    ackValues.hvac_status = hvacState;\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (state.requested !== undefined) {\n    ackValues.requested_value = state.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: state.deviceName,\n            id: state.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [state.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'mqtt-ack',\n            command_id: commandId,\n            device: state.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
         "outputs": 3,
         "timeout": 0,
         "noerr": 0,
@@ -1307,7 +1310,7 @@
         "type": "function",
         "z": "e64a6d9b89c72938",
         "name": "Handle CoAP Ack",
-        "func": "const rpc = msg._rpc;\nif (!rpc || !rpc.commandId) return null;\n\nlet payload = msg.payload;\nif (Buffer.isBuffer(payload)) {\n    payload = payload.toString('utf8');\n}\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('CoAP ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst pending = flow.get('pendingRpcAcks') || {};\ndelete pending[rpc.commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - rpc.startedAt;\nconst ackValues = { rtt_ms: rttMs };\nif (payload.hvac_mode !== undefined) {\n    ackValues.hvac_mode = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_status = String(payload.hvac_mode).toLowerCase();\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (payload.ambient !== undefined) {\n    ackValues.light_level = payload.ambient;\n}\nif (rpc.requested !== undefined) {\n    ackValues.requested_value = rpc.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: rpc.deviceName,\n            id: rpc.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [rpc.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'coap-ack',\n            command_id: rpc.commandId,\n            device: rpc.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
+        "func": "const rpc = msg._rpc;\nif (!rpc || !rpc.commandId) return null;\n\nlet payload = msg.payload;\nif (Buffer.isBuffer(payload)) {\n    payload = payload.toString('utf8');\n}\nif (typeof payload === 'string') {\n    try {\n        payload = JSON.parse(payload);\n    } catch (e) {\n        node.error('CoAP ack parse failed: ' + e.message, msg);\n        return null;\n    }\n}\n\nconst pending = flow.get('pendingRpcAcks') || {};\ndelete pending[rpc.commandId];\nflow.set('pendingRpcAcks', pending);\n\nconst rttMs = Date.now() - rpc.startedAt;\nconst ackValues = { rtt_ms: rttMs };\nif (payload.hvac_mode !== undefined) {\n    const hvacState = String(payload.hvac_mode).toLowerCase();\n    ackValues.hvac_mode = hvacState;\n    ackValues.hvac_status = hvacState;\n}\nif (payload.lighting_dimmer !== undefined) {\n    ackValues.lighting_dimmer = payload.lighting_dimmer;\n}\nif (payload.ambient !== undefined) {\n    ackValues.light_level = payload.ambient;\n}\nif (rpc.requested !== undefined) {\n    ackValues.requested_value = rpc.requested;\n}\n\nreturn [\n    {\n        payload: JSON.stringify({\n            device: rpc.deviceName,\n            id: rpc.rpcId,\n            data: {\n                success: true,\n                state: payload.hvac_mode !== undefined ? String(payload.hvac_mode).toLowerCase() : payload.lighting_dimmer,\n                rtt_ms: rttMs,\n                ack: payload\n            }\n        })\n    },\n    {\n        payload: JSON.stringify({\n            [rpc.deviceName]: [\n                {\n                    ts: Date.now(),\n                    values: ackValues\n                }\n            ]\n        })\n    },\n    {\n        payload: {\n            source: 'coap-ack',\n            command_id: rpc.commandId,\n            device: rpc.deviceName,\n            rtt_ms: rttMs,\n            ack: payload\n        }\n    }\n];",
         "outputs": 3,
         "timeout": 0,
         "noerr": 0,
@@ -1428,6 +1431,24 @@
         "statusType": "auto",
         "x": 1290,
         "y": 300,
+        "wires": []
+    },
+    {
+        "id": "f6fe8a6eaf28176e",
+        "type": "mqtt out",
+        "z": "e64a6d9b89c72938",
+        "name": "ThingsBoard Gateway Attributes",
+        "topic": "v1/gateway/attributes",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb_direct_broker",
+        "x": 1350,
+        "y": 600,
         "wires": []
     }
 ]
