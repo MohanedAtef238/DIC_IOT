@@ -71,6 +71,73 @@ Safe to keep defaults.
 | `PUBLISH_INTERVAL` | `5` | Seconds per tick |
 | `MQTT_HOST` / `MQTT_PORT` | `mosquitto` / `1883` | Broker address |
 
+## ThingsBoard Digital Twin (Hierarchy + Aggregation)
+
+This project expects the asset topology to be managed in ThingsBoard and the aggregation to run in the Rule Engine (not Node-RED).
+
+### Asset hierarchy
+
+Create assets following the strict path:
+
+`Campus -> Building -> Floor -> Room`
+
+Suggested naming:
+
+- Campus: `ZC-Main-Campus`
+- Building: `B01`, `B02`
+- Floor: `B01-F01` ... `B01-F10`
+- Room: `B01-F01-R001` ... `B01-F01-R020`
+
+Each room asset must include server-side attributes:
+
+- `square_footage` (number)
+- `occupant_capacity` (integer)
+- `coordinates_x` (number)
+- `coordinates_y` (number)
+- `room_type` (string: `lecture_hall`, `lab`, `office`, `corridor`)
+
+### Relation mapping
+
+Create asset relations:
+
+- `Campus` contains `Building`
+- `Building` contains `Floor`
+- `Floor` contains `Room`
+- Each device contains relation to its room (device -> room via `Contains`)
+
+### Floor average temperature in ThingsBoard
+
+Use a Rule Chain that triggers on room telemetry and posts the floor average to the parent floor asset.
+
+Template rule chain export (adjust node types if your ThingsBoard version differs):
+
+- [thingsboard/rulechains/floor_avg_temperature_rulechain.json](thingsboard/rulechains/floor_avg_temperature_rulechain.json)
+
+Recommended nodes:
+
+1. **Message Type Switch**: pass `POST_TELEMETRY_REQUEST` only.
+2. **Relation Query**: find the parent floor asset from the room using relation `Contains` (direction TO if the relation is Floor -> Room).
+3. **Aggregate Latest**: aggregate key `temperature` across all rooms related to the floor using relation `Contains` (from floor to rooms).
+4. **Script**: map the aggregate output to floor telemetry.
+5. **Save Timeseries**: save telemetry for the floor asset.
+
+The aggregation key is `temperature` because the gateway mapping publishes it under that name.
+
+Script node example (expects `msg.avg` from the Aggregate Latest node):
+
+```javascript
+var avgTemp = msg.avg !== undefined ? msg.avg : null;
+if (avgTemp === null) {
+  return null;
+}
+
+msg = {
+  floor_avg_temperature: avgTemp,
+  floor_avg_sample_count: msg.count || 0
+};
+return { msg: msg, metadata: metadata, msgType: 'POST_TELEMETRY_REQUEST' };
+```
+
 ## ThingsBoard Disk Growth
 
 When a ThingsBoard restore suddenly consumes multiple GB, the growth is usually in PostgreSQL data under the Docker volume backing `/data/db`, especially `/data/db/base` and `/data/db/pg_wal`.

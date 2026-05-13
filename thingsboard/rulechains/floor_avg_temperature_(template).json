@@ -1,0 +1,171 @@
+{
+  "ruleChain": {
+    "name": "Floor Avg Temperature (Template)",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": {},
+    "additionalInfo": null
+  },
+  "metadata": {
+    "version": 2,
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Telemetry Filter",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "messageTypes": [
+            "POST_TELEMETRY_REQUEST"
+          ]
+        },
+        "additionalInfo": {
+          "layoutX": 222,
+          "layoutY": 321
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "Map Floor Avg Telemetry",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "\r\n// Expect an array of related entities with telemetry in msg.data or msg.entities\r\nvar rows = msg.data || msg.entities || [];\r\nvar sum = 0;\r\nvar count = 0;\r\n\r\nrows.forEach(function (row) {\r\n  // Common formats: row.latest.TEMPERATURE[0].value or row.temperature.value\r\n  var t = null;\r\n\r\n  if (row.latest && row.latest.temperature && row.latest.temperature.length) {\r\n    t = row.latest.temperature[0].value;\r\n  } else if (row.temperature && row.temperature.value !== undefined) {\r\n    t = row.temperature.value;\r\n  } else if (row.temperature !== undefined) {\r\n    t = row.temperature;\r\n  }\r\n\r\n  t = Number(t);\r\n  if (!isNaN(t)) {\r\n    sum += t;\r\n    count += 1;\r\n  }\r\n});\r\n\r\nif (count === 0) return null;\r\n\r\nmsg = {\r\n  floor_avg_temperature: sum / count,\r\n  floor_avg_sample_count: count\r\n};\r\nreturn { msg: msg, metadata: metadata, msgType: 'POST_TELEMETRY_REQUEST' };",
+          "tbelScript": null
+        },
+        "additionalInfo": {
+          "description": null,
+          "layoutX": 1001,
+          "layoutY": 344
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgTimeseriesNode",
+        "name": "Save floor telemetry",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "processingSettings": {
+            "timeseries": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "latest": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "webSockets": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "calculatedFields": {
+              "type": "ON_EVERY_MESSAGE"
+            },
+            "type": "ADVANCED"
+          },
+          "defaultTTL": 0,
+          "useServerTs": false
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1149,
+          "layoutY": 157
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode",
+        "name": "Find Parent Floor",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "relationsQuery": {
+            "fetchLastLevelOnly": true,
+            "direction": "TO",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "ASSET"
+                ]
+              }
+            ]
+          },
+          "dataToFetch": "LATEST_TELEMETRY",
+          "fetchTo": "METADATA",
+          "dataMapping": {}
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 426,
+          "layoutY": 345
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.metadata.TbGetRelatedAttributeNode",
+        "name": "Aggregate latest",
+        "debugSettings": null,
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "relationsQuery": {
+            "fetchLastLevelOnly": true,
+            "direction": "FROM",
+            "maxLevel": 1,
+            "filters": [
+              {
+                "relationType": "Contains",
+                "entityTypes": [
+                  "ASSET"
+                ]
+              }
+            ]
+          },
+          "dataToFetch": "LATEST_TELEMETRY",
+          "fetchTo": "DATA",
+          "dataMapping": {
+            "temperature": "temperature"
+          }
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 735,
+          "layoutY": 355
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 3,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 1,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
