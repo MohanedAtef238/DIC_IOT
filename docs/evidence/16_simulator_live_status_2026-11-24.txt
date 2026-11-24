@@ -1,0 +1,19 @@
+# Captured 24 Nov 2026 07:26:46 (local time) on the running DIC_IOT stack. Output below is unedited.
+
+> docker ps --filter name=campus_engine --filter name=mosquitto --filter name=nodered_floor_01 --format "table {{.Names}}\t{{.Status}}"
+NAMES              STATUS
+nodered_floor_01   Up 26 minutes (healthy)
+campus_engine      Up 26 minutes
+mosquitto          Up 27 minutes (healthy)
+
+> docker exec -i campus_engine python - < docs/evidence/simulator_status_check.py
+container clock (UTC): 2026-11-24 05:26:46
+simulator process (PID 1): python main.py
+
+rooms in the simulator database: 200
+rooms whose state was written in the last 60 s: 200
+rooms per floor: f01=20 f02=20 f03=20 f04=20 f05=20 f06=20 f07=20 f08=20 f09=20 f10=20
+HVAC modes: {'ON': 6, 'OFF': 194}
+
+CoAP room servers: UDP sockets listening on ports 5700-5899: 200 on 100 distinct ports (one port per CoAP room)
+MQTT clients: established TLS connections to the broker on port 8883: 101

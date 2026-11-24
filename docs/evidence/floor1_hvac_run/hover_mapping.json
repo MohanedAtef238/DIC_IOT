@@ -1,0 +1,8 @@
+{
+ "1": "b01-f01-r001\nTemperature: 20.10\nHumidity: 20.00\nHVAC: OFF\nLast sent: 24/11/2026, 07:10:07\nVersion: 1.0\nAlpha: 0.05 Beta: 0.30",
+ "4": "b01-f01-r004-COAP\nTemperature: 20.10\nHumidity: 20.00\nHVAC: OFF\nLast sent: 24/11/2026, 07:10:12\nVersion: 1.0\nAlpha: 0.05 Beta: 0.30",
+ "5": "(no tooltip)",
+ "8": "b01-f01-r008-COAP\nTemperature: 20.10\nHumidity: 20.00\nHVAC: OFF\nLast sent: 24/11/2026, 07:10:12\nVersion: 1.0\nAlpha: 0.05 Beta: 0.30",
+ "11": "b01-f01-r011\nTemperature: 20.10\nHumidity: 20.00\nHVAC: OFF\nLast sent: 24/11/2026, 07:10:13\nVersion: 1.0\nAlpha: 0.05 Beta: 0.30",
+ "20": "b01-f01-r020-COAP\nTemperature: 20.10\nHumidity: 20.00\nHVAC: OFF\nLast sent: 24/11/2026, 07:10:12\nVersion: 1.0\nAlpha: 0.05 Beta: 0.30"
+}

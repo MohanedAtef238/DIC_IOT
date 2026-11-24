@@ -1,0 +1,26 @@
+18 File(s) copied
+nodered_master
+ Container mosquitto  Running
+ Container campus_engine  Recreate
+ Container campus_engine  Recreated
+ Container mosquitto  Waiting
+ Container mosquitto  Healthy
+ Container campus_engine  Starting
+ Container campus_engine  Started
+Capturing Streamlit Campus IoT Dashboard...
+  -> Captured Streamlit Dashboard
+Capturing Node-RED Master Flows...
+  -> Captured Node-RED Master Flows
+Capturing Node-RED Floor 01 Gateway...
+  -> Captured Node-RED Floor 01 Gateway
+Capturing ThingsBoard Digital-Twin Platform...
+  -> Captured ThingsBoard Platform & Dashboards
+All screenshot captures finished!
+1. Logging into ThingsBoard...
+2. Opening Dashboards table...
+Found Enhanced Dashboard row! Clicking open button...
+Captured 13_enhanced_dashboard_opened.png
+3. Found 20 interactive leaflet polygons.
+  -> Captured hover screenshot on room polygon 1
+  -> Captured hover screenshot on room polygon 3
+  -> Captured hover screenshot on room polygon 5

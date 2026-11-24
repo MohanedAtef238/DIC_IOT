@@ -1,0 +1,311 @@
+2026-11-23 08:23:59,904 WARNING COAP_DTLS_ENABLED is false; CoAP rooms will run plain UDP
+2026-11-23 08:23:59,904 INFO booting campus sim — 200 nodes (10x20), paired MQTT+CoAP
+2026-11-23 08:23:59,918 INFO 403 tasks launched, entering event loop
+2026-11-23 08:23:59,947 INFO health check ok; slowest room b01-f01-r001 last heartbeat 0s ago
+2026-11-23 08:24:01,546 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,547 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,547 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,547 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,547 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,547 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,548 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,549 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,549 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,549 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,549 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,549 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,550 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,551 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,552 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,553 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,554 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,554 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,554 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,586 INFO broker connected mosquitto:8883 tls=True mtls=True
+2026-11-23 08:24:01,590 INFO CoAP server running for room b01-f01-r002 on coap://127.0.0.1:5701
+2026-11-23 08:24:01,590 INFO CoAP server running for room b01-f01-r004 on coap://127.0.0.1:5703
+2026-11-23 08:24:01,590 INFO CoAP server running for room b01-f01-r006 on coap://127.0.0.1:5705
+2026-11-23 08:24:01,590 INFO CoAP server running for room b01-f01-r008 on coap://127.0.0.1:5707
+2026-11-23 08:24:01,591 INFO CoAP server running for room b01-f01-r010 on coap://127.0.0.1:5709
+2026-11-23 08:24:01,591 INFO CoAP server running for room b01-f01-r012 on coap://127.0.0.1:5711
+2026-11-23 08:24:01,591 INFO CoAP server running for room b01-f01-r014 on coap://127.0.0.1:5713
+2026-11-23 08:24:01,591 INFO CoAP server running for room b01-f01-r016 on coap://127.0.0.1:5715
+2026-11-23 08:24:01,591 INFO CoAP server running for room b01-f01-r018 on coap://127.0.0.1:5717
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f01-r020 on coap://127.0.0.1:5719
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f02-r022 on coap://127.0.0.1:5721
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f02-r024 on coap://127.0.0.1:5723
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f02-r028 on coap://127.0.0.1:5727
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f02-r026 on coap://127.0.0.1:5725
+2026-11-23 08:24:01,592 INFO CoAP server running for room b01-f02-r030 on coap://127.0.0.1:5729
+2026-11-23 08:24:01,593 INFO CoAP server running for room b01-f02-r032 on coap://127.0.0.1:5731
+2026-11-23 08:24:01,593 INFO CoAP server running for room b01-f02-r034 on coap://127.0.0.1:5733
+2026-11-23 08:24:01,593 INFO CoAP server running for room b01-f02-r036 on coap://127.0.0.1:5735
+2026-11-23 08:24:01,593 INFO CoAP server running for room b01-f02-r038 on coap://127.0.0.1:5737
+2026-11-23 08:24:01,593 INFO CoAP server running for room b01-f02-r040 on coap://127.0.0.1:5739
+2026-11-23 08:24:01,594 INFO CoAP server running for room b01-f03-r042 on coap://127.0.0.1:5741
+2026-11-23 08:24:01,594 INFO CoAP server running for room b01-f03-r044 on coap://127.0.0.1:5743
+2026-11-23 08:24:01,594 INFO CoAP server running for room b01-f03-r046 on coap://127.0.0.1:5745
+2026-11-23 08:24:01,594 INFO CoAP server running for room b01-f03-r048 on coap://127.0.0.1:5747
+2026-11-23 08:24:01,595 INFO CoAP server running for room b01-f03-r052 on coap://127.0.0.1:5751
+2026-11-23 08:24:01,595 INFO CoAP server running for room b01-f03-r050 on coap://127.0.0.1:5749
+2026-11-23 08:24:01,595 INFO CoAP server running for room b01-f03-r054 on coap://127.0.0.1:5753
+2026-11-23 08:24:01,595 INFO CoAP server running for room b01-f03-r056 on coap://127.0.0.1:5755
+2026-11-23 08:24:01,595 INFO CoAP server running for room b01-f03-r058 on coap://127.0.0.1:5757
+2026-11-23 08:24:01,596 INFO CoAP server running for room b01-f04-r062 on coap://127.0.0.1:5761
+2026-11-23 08:24:01,596 INFO CoAP server running for room b01-f03-r060 on coap://127.0.0.1:5759
+2026-11-23 08:24:01,596 INFO CoAP server running for room b01-f04-r064 on coap://127.0.0.1:5763
+2026-11-23 08:24:01,596 INFO CoAP server running for room b01-f04-r066 on coap://127.0.0.1:5765
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r068 on coap://127.0.0.1:5767
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r070 on coap://127.0.0.1:5769
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r072 on coap://127.0.0.1:5771
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r074 on coap://127.0.0.1:5773
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r078 on coap://127.0.0.1:5777
+2026-11-23 08:24:01,597 INFO CoAP server running for room b01-f04-r076 on coap://127.0.0.1:5775
+2026-11-23 08:24:01,598 INFO CoAP server running for room b01-f05-r082 on coap://127.0.0.1:5781
+2026-11-23 08:24:01,598 INFO CoAP server running for room b01-f05-r084 on coap://127.0.0.1:5783
+2026-11-23 08:24:01,598 INFO CoAP server running for room b01-f04-r080 on coap://127.0.0.1:5779
+2026-11-23 08:24:01,598 INFO CoAP server running for room b01-f05-r086 on coap://127.0.0.1:5785
+2026-11-23 08:24:01,599 INFO CoAP server running for room b01-f05-r090 on coap://127.0.0.1:5789
+2026-11-23 08:24:01,599 INFO CoAP server running for room b01-f05-r088 on coap://127.0.0.1:5787
+2026-11-23 08:24:01,600 INFO CoAP server running for room b01-f05-r094 on coap://127.0.0.1:5793
+2026-11-23 08:24:01,600 INFO CoAP server running for room b01-f05-r098 on coap://127.0.0.1:5797
+2026-11-23 08:24:01,600 INFO CoAP server running for room b01-f05-r092 on coap://127.0.0.1:5791
+2026-11-23 08:24:01,601 INFO CoAP server running for room b01-f05-r100 on coap://127.0.0.1:5799
+2026-11-23 08:24:01,601 INFO CoAP server running for room b01-f05-r096 on coap://127.0.0.1:5795
+2026-11-23 08:24:01,601 INFO CoAP server running for room b01-f06-r102 on coap://127.0.0.1:5801
+2026-11-23 08:24:01,601 INFO CoAP server running for room b01-f06-r104 on coap://127.0.0.1:5803
+2026-11-23 08:24:01,601 INFO CoAP server running for room b01-f06-r108 on coap://127.0.0.1:5807
+2026-11-23 08:24:01,602 INFO CoAP server running for room b01-f06-r106 on coap://127.0.0.1:5805
+2026-11-23 08:24:01,602 INFO CoAP server running for room b01-f06-r112 on coap://127.0.0.1:5811
+2026-11-23 08:24:01,602 INFO CoAP server running for room b01-f06-r110 on coap://127.0.0.1:5809
+2026-11-23 08:24:01,602 INFO CoAP server running for room b01-f06-r114 on coap://127.0.0.1:5813
+2026-11-23 08:24:01,602 INFO CoAP server running for room b01-f06-r116 on coap://127.0.0.1:5815
+2026-11-23 08:24:01,603 INFO CoAP server running for room b01-f06-r120 on coap://127.0.0.1:5819
+2026-11-23 08:24:01,603 INFO CoAP server running for room b01-f06-r118 on coap://127.0.0.1:5817
+2026-11-23 08:24:01,603 INFO CoAP server running for room b01-f07-r122 on coap://127.0.0.1:5821
+2026-11-23 08:24:01,603 INFO CoAP server running for room b01-f07-r126 on coap://127.0.0.1:5825
+2026-11-23 08:24:01,603 INFO CoAP server running for room b01-f07-r124 on coap://127.0.0.1:5823
+2026-11-23 08:24:01,604 INFO CoAP server running for room b01-f07-r130 on coap://127.0.0.1:5829
+2026-11-23 08:24:01,604 INFO CoAP server running for room b01-f07-r132 on coap://127.0.0.1:5831
+2026-11-23 08:24:01,604 INFO CoAP server running for room b01-f07-r128 on coap://127.0.0.1:5827
+2026-11-23 08:24:01,605 INFO CoAP server running for room b01-f07-r136 on coap://127.0.0.1:5835
+2026-11-23 08:24:01,605 INFO CoAP server running for room b01-f07-r134 on coap://127.0.0.1:5833
+2026-11-23 08:24:01,606 INFO CoAP server running for room b01-f07-r140 on coap://127.0.0.1:5839
+2026-11-23 08:24:01,606 INFO CoAP server running for room b01-f07-r138 on coap://127.0.0.1:5837
+2026-11-23 08:24:01,606 INFO CoAP server running for room b01-f08-r142 on coap://127.0.0.1:5841
+2026-11-23 08:24:01,606 INFO CoAP server running for room b01-f08-r148 on coap://127.0.0.1:5847
+2026-11-23 08:24:01,607 INFO CoAP server running for room b01-f08-r144 on coap://127.0.0.1:5843
+2026-11-23 08:24:01,607 INFO CoAP server running for room b01-f08-r152 on coap://127.0.0.1:5851
+2026-11-23 08:24:01,607 INFO CoAP server running for room b01-f08-r150 on coap://127.0.0.1:5849
+2026-11-23 08:24:01,608 INFO CoAP server running for room b01-f08-r154 on coap://127.0.0.1:5853
+2026-11-23 08:24:01,608 INFO CoAP server running for room b01-f08-r146 on coap://127.0.0.1:5845
+2026-11-23 08:24:01,608 INFO CoAP server running for room b01-f08-r158 on coap://127.0.0.1:5857
+2026-11-23 08:24:01,608 INFO CoAP server running for room b01-f09-r162 on coap://127.0.0.1:5861
+2026-11-23 08:24:01,608 INFO CoAP server running for room b01-f08-r160 on coap://127.0.0.1:5859
+2026-11-23 08:24:01,609 INFO CoAP server running for room b01-f08-r156 on coap://127.0.0.1:5855
+2026-11-23 08:24:01,609 INFO CoAP server running for room b01-f09-r166 on coap://127.0.0.1:5865
+2026-11-23 08:24:01,609 INFO CoAP server running for room b01-f09-r168 on coap://127.0.0.1:5867
+2026-11-23 08:24:01,609 INFO CoAP server running for room b01-f09-r176 on coap://127.0.0.1:5875
+2026-11-23 08:24:01,610 INFO CoAP server running for room b01-f09-r172 on coap://127.0.0.1:5871
+2026-11-23 08:24:01,610 INFO CoAP server running for room b01-f09-r174 on coap://127.0.0.1:5873
+2026-11-23 08:24:01,610 INFO CoAP server running for room b01-f09-r178 on coap://127.0.0.1:5877
+2026-11-23 08:24:01,610 INFO CoAP server running for room b01-f09-r170 on coap://127.0.0.1:5869
+2026-11-23 08:24:01,610 INFO CoAP server running for room b01-f09-r164 on coap://127.0.0.1:5863
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f10-r182 on coap://127.0.0.1:5881
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f10-r184 on coap://127.0.0.1:5883
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f10-r186 on coap://127.0.0.1:5885
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f09-r180 on coap://127.0.0.1:5879
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f10-r194 on coap://127.0.0.1:5893
+2026-11-23 08:24:01,611 INFO CoAP server running for room b01-f10-r190 on coap://127.0.0.1:5889
+2026-11-23 08:24:01,612 INFO CoAP server running for room b01-f10-r192 on coap://127.0.0.1:5891
+2026-11-23 08:24:01,612 INFO CoAP server running for room b01-f10-r196 on coap://127.0.0.1:5895
+2026-11-23 08:24:01,612 INFO CoAP server running for room b01-f10-r198 on coap://127.0.0.1:5897
+2026-11-23 08:24:01,612 INFO CoAP server running for room b01-f10-r200 on coap://127.0.0.1:5899
+2026-11-23 08:24:01,612 INFO CoAP server running for room b01-f10-r188 on coap://127.0.0.1:5887
+2026-11-23 08:24:01,679 INFO CoAP server running for room b01-f01-r002 on coap://172.24.0.15:5701
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r004 on coap://172.24.0.15:5703
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r006 on coap://172.24.0.15:5705
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r008 on coap://172.24.0.15:5707
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r010 on coap://172.24.0.15:5709
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r012 on coap://172.24.0.15:5711
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r014 on coap://172.24.0.15:5713
+2026-11-23 08:24:01,680 INFO CoAP server running for room b01-f01-r016 on coap://172.24.0.15:5715
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f01-r018 on coap://172.24.0.15:5717
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f01-r020 on coap://172.24.0.15:5719
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r024 on coap://172.24.0.15:5723
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r030 on coap://172.24.0.15:5729
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r022 on coap://172.24.0.15:5721
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r038 on coap://172.24.0.15:5737
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r032 on coap://172.24.0.15:5731
+2026-11-23 08:24:01,681 INFO CoAP server running for room b01-f02-r034 on coap://172.24.0.15:5733
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f02-r036 on coap://172.24.0.15:5735
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f02-r028 on coap://172.24.0.15:5727
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f02-r026 on coap://172.24.0.15:5725
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f02-r040 on coap://172.24.0.15:5739
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f03-r042 on coap://172.24.0.15:5741
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f03-r052 on coap://172.24.0.15:5751
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f03-r048 on coap://172.24.0.15:5747
+2026-11-23 08:24:01,682 INFO CoAP server running for room b01-f03-r054 on coap://172.24.0.15:5753
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r046 on coap://172.24.0.15:5745
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r066 on coap://172.24.0.15:5765
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r050 on coap://172.24.0.15:5749
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r060 on coap://172.24.0.15:5759
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r064 on coap://172.24.0.15:5763
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r058 on coap://172.24.0.15:5757
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r044 on coap://172.24.0.15:5743
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r070 on coap://172.24.0.15:5769
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f03-r056 on coap://172.24.0.15:5755
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r062 on coap://172.24.0.15:5761
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r068 on coap://172.24.0.15:5767
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r074 on coap://172.24.0.15:5773
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r072 on coap://172.24.0.15:5771
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r076 on coap://172.24.0.15:5775
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f05-r084 on coap://172.24.0.15:5783
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r078 on coap://172.24.0.15:5777
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f04-r080 on coap://172.24.0.15:5779
+2026-11-23 08:24:01,683 INFO CoAP server running for room b01-f05-r092 on coap://172.24.0.15:5791
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r090 on coap://172.24.0.15:5789
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r088 on coap://172.24.0.15:5787
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r094 on coap://172.24.0.15:5793
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r096 on coap://172.24.0.15:5795
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r082 on coap://172.24.0.15:5781
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r100 on coap://172.24.0.15:5799
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f05-r098 on coap://172.24.0.15:5797
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r104 on coap://172.24.0.15:5803
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r108 on coap://172.24.0.15:5807
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r106 on coap://172.24.0.15:5805
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r116 on coap://172.24.0.15:5815
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r110 on coap://172.24.0.15:5809
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r118 on coap://172.24.0.15:5817
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r112 on coap://172.24.0.15:5811
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f06-r114 on coap://172.24.0.15:5813
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f07-r128 on coap://172.24.0.15:5827
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f07-r126 on coap://172.24.0.15:5825
+2026-11-23 08:24:01,684 INFO CoAP server running for room b01-f07-r124 on coap://172.24.0.15:5823
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r130 on coap://172.24.0.15:5829
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r132 on coap://172.24.0.15:5831
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f05-r086 on coap://172.24.0.15:5785
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r122 on coap://172.24.0.15:5821
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r134 on coap://172.24.0.15:5833
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f06-r120 on coap://172.24.0.15:5819
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r150 on coap://172.24.0.15:5849
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r138 on coap://172.24.0.15:5837
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r142 on coap://172.24.0.15:5841
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r136 on coap://172.24.0.15:5835
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r152 on coap://172.24.0.15:5851
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r144 on coap://172.24.0.15:5843
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f07-r140 on coap://172.24.0.15:5839
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r148 on coap://172.24.0.15:5847
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f06-r102 on coap://172.24.0.15:5801
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r154 on coap://172.24.0.15:5853
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r146 on coap://172.24.0.15:5845
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f09-r162 on coap://172.24.0.15:5861
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r158 on coap://172.24.0.15:5857
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r160 on coap://172.24.0.15:5859
+2026-11-23 08:24:01,685 INFO CoAP server running for room b01-f08-r156 on coap://172.24.0.15:5855
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r166 on coap://172.24.0.15:5865
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r168 on coap://172.24.0.15:5867
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r176 on coap://172.24.0.15:5875
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r172 on coap://172.24.0.15:5871
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r178 on coap://172.24.0.15:5877
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r164 on coap://172.24.0.15:5863
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r174 on coap://172.24.0.15:5873
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r170 on coap://172.24.0.15:5869
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r182 on coap://172.24.0.15:5881
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r184 on coap://172.24.0.15:5883
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r194 on coap://172.24.0.15:5893
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r196 on coap://172.24.0.15:5895
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r186 on coap://172.24.0.15:5885
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r190 on coap://172.24.0.15:5889
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r200 on coap://172.24.0.15:5899
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r198 on coap://172.24.0.15:5897
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r192 on coap://172.24.0.15:5891
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f10-r188 on coap://172.24.0.15:5887
+2026-11-23 08:24:01,686 INFO CoAP server running for room b01-f09-r180 on coap://172.24.0.15:5879
+2026-11-23 08:24:31,104 INFO persisted 200 room states to sqlite
+2026-11-23 08:24:31,108 INFO health check ok; slowest room b01-f03-r057 last heartbeat 7s ago
+2026-11-23 08:25:02,209 INFO persisted 200 room states to sqlite
+2026-11-23 08:25:02,214 INFO health check ok; slowest room b01-f01-r001 last heartbeat 6s ago
+2026-11-23 08:25:33,354 INFO persisted 200 room states to sqlite
+2026-11-23 08:25:33,378 INFO health check ok; slowest room b01-f01-r001 last heartbeat 6s ago
