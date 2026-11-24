@@ -6,7 +6,15 @@ node_modules
 .npm
 certs/*.srl
 
-# Environment variables — contains mostly configuration values, not that secretive in this project's scope
+# Environment variables: contains keys, passwords and tokens. Copy .env.example to .env and fill it in.
+.env
+
+# Wokwi device credentials (HiveMQ login). Copy Wokwi/secrets.example.py to Wokwi/secrets.py.
+Wokwi/secrets.py
+
+# Diagnostic dumps (may contain environment variables and tokens) and local tool caches
+docs/diag/
+/graft/
 
 # SQLite database written at runtime
 *.db

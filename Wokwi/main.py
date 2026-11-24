@@ -5,6 +5,7 @@ import ntptime
 from machine import Pin, ADC, PWM
 import dht
 from umqtt.simple import MQTTClient
+from secrets import MQTT_BROKER, MQTT_USER, MQTT_PASS  # HiveMQ login, see secrets.example.py
 
 # =========================
 # CONFIG
@@ -12,13 +13,9 @@ from umqtt.simple import MQTTClient
 SSID = "Wokwi-GUEST"
 PASSWORD = ""
 
-MQTT_BROKER = "9ee5ca1bdb284fceaf7e3efd2799e852.s1.eu.hivemq.cloud"
 MQTT_PORT = 8883
 
 CLIENT_ID = "202200059-device"
-
-MQTT_USER = "Kareem"
-MQTT_PASS = "Kareem123456"
 
 TOPIC_TELEMETRY = b"campus/b01/floor1/room001/telemetry"
 TOPIC_HEARTBEAT = b"campus/heartbeat/room001"

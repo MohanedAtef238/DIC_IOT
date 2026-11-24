@@ -37,8 +37,20 @@ openssl x509 -req -in mytb.csr \
 rm -f mytb.csr san_mytb.ext
 
 # DTLS pre-shared key 
-PSK_B64=$(openssl rand -hex 16 | python3 -c \
-    "import sys,base64; print(base64.b64encode(bytes.fromhex(sys.stdin.read().strip())).decode())")
+if command -v python >/dev/null 2>&1 && python -c "import sys" >/dev/null 2>&1; then
+    PY_CMD="python"
+elif command -v python3 >/dev/null 2>&1 && python3 -c "import sys" >/dev/null 2>&1; then
+    PY_CMD="python3"
+else
+    PY_CMD=""
+fi
+
+if [ -n "$PY_CMD" ]; then
+    PSK_B64=$(openssl rand -hex 16 | $PY_CMD -c \
+        "import sys,base64; print(base64.b64encode(bytes.fromhex(sys.stdin.read().strip())).decode())")
+else
+    PSK_B64=$(openssl rand -base64 16)
+fi
 cat > dtls_psk.json <<EOF
 {
     "psk_identity": "campus-iot-sensor",
@@ -68,11 +80,12 @@ generate_client_cert "engine"
 rm -f ca.srl
 
 # MQTT broker password file for the 'engine' service account
-MQTT_PASS=$(openssl rand -base64 18 | tr -d '/+=')
+# Uses MQTT_PASS from the environment if set, otherwise generates a new random password.
+MQTT_PASS="${MQTT_PASS:-$(openssl rand -base64 18 | tr -d '/+=')}"
 docker run --rm \
     -v "$(cd .. && pwd)/mosquitto/config:/mosquitto/config" \
     eclipse-mosquitto:2 \
-    sh -c "mosquitto_passwd -b -c /mosquitto/config/passwd engine '$MQTT_PASS'"
+    sh -c "mosquitto_passwd -b -c /tmp/passwd engine '$MQTT_PASS' && cp /tmp/passwd /mosquitto/config/passwd"
 
 echo ""
 echo "=== Generated certificates ==="
