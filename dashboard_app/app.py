@@ -167,7 +167,7 @@ def load_rows(db_path):
 
 
 st.subheader("Fleet HVAC Control")
-control_col1, control_col2 = st.columns([2, 1])
+control_col1, control_col2 = st.columns([2, 1], vertical_alignment="bottom")
 selected_mode = control_col1.selectbox("HVAC mode for all rooms", VALID_HVAC_MODES, index=0)
 if control_col2.button("Apply to fleet", use_container_width=True):
     try:
@@ -203,7 +203,7 @@ with st.expander("Targeted room control"):
     target_mode = selection_col2.selectbox("HVAC mode for selected room", VALID_HVAC_MODES, index=0)
     target_dimmer = selection_col2.slider("Lighting dimmer %", min_value=0, max_value=100, value=75)
 
-    target_hvac_col, target_dimmer_col = st.columns([2, 2])
+    target_hvac_col, target_dimmer_col = st.columns([2, 3])
     if target_hvac_col.button("Apply HVAC to selected room", use_container_width=True):
         try:
             topic = publish_room_hvac(room_floor, room_num, target_mode)
