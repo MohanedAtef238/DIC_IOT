@@ -281,8 +281,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 170,
-        "y": 100,
+        "x": 190,
+        "y": 80,
         "wires": [
             [
                 "72b1927147425a91"
@@ -301,8 +301,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 390,
-        "y": 100,
+        "x": 460,
+        "y": 80,
         "wires": [
             [
                 "617439d4788bfb98"
@@ -322,8 +322,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 1,
-        "x": 650,
-        "y": 100,
+        "x": 770,
+        "y": 80,
         "wires": [
             [
                 "918b990f2964491d"
@@ -342,8 +342,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 900,
-        "y": 100,
+        "x": 1190,
+        "y": 80,
         "wires": [
             [
                 "telemetry_debug",
@@ -377,8 +377,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 130,
-        "y": 220,
+        "x": 140,
+        "y": 162,
         "wires": [
             [
                 "cb57867ca1bbbf9d"
@@ -397,8 +397,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
-        "y": 220,
+        "x": 440,
+        "y": 162,
         "wires": [
             [
                 "2ba2fd370f9a2ea2"
@@ -418,8 +418,8 @@
         "content-format": "application/json",
         "raw-buffer": false,
         "name": "Room Fetcher",
-        "x": 560,
-        "y": 220,
+        "x": 760,
+        "y": 162,
         "wires": [
             [
                 "3fee8d371c2faf8a"
@@ -438,8 +438,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 790,
-        "y": 220,
+        "x": 1190,
+        "y": 162,
         "wires": [
             [
                 "telemetry_debug"
@@ -469,8 +469,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1300,
-        "y": 680,
+        "x": 1460,
+        "y": 385,
         "wires": []
     },
     {
@@ -487,8 +487,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1290,
-        "y": 420,
+        "x": 1470,
+        "y": 229,
         "wires": []
     },
     {
@@ -503,8 +503,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1180,
-        "y": 180,
+        "x": 1460,
+        "y": 281,
         "wires": [
             [
                 "d11494a69ed920b4"
@@ -524,8 +524,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1440,
-        "y": 200,
+        "x": 1720,
+        "y": 281,
         "wires": []
     },
     {
@@ -540,7 +540,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1180,
+        "x": 1460,
         "y": 80,
         "wires": [
             [
@@ -561,8 +561,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1400,
-        "y": 60,
+        "x": 1720,
+        "y": 80,
         "wires": []
     },
     {
@@ -586,8 +586,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 230,
-        "y": 740,
+        "x": 150,
+        "y": 229,
         "wires": [
             [
                 "9df48487b76295ef"
@@ -606,8 +606,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 520,
-        "y": 680,
+        "x": 440,
+        "y": 229,
         "wires": [
             [
                 "9a3a48a66b32597a",
@@ -631,8 +631,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 720,
-        "y": 800,
+        "x": 740,
+        "y": 229,
         "wires": []
     },
     {
@@ -649,8 +649,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1310,
-        "y": 520,
+        "x": 1470,
+        "y": 333,
         "wires": []
     },
     {
@@ -663,8 +663,8 @@
         "datatype": "json",
         "broker": "tb_direct_broker",
         "inputs": 0,
-        "x": 190,
-        "y": 880,
+        "x": 180,
+        "y": 765,
         "wires": [
             [
                 "f342e19c21cf0e5d",
@@ -680,7 +680,7 @@
         "func": "const floor = Number(env.get('FLOOR_NUMBER') || 0);\n\n// Master (floor 0) has no TB gateway connection — it never receives these messages.\nif (floor === 0) return null;\n\nlet payload = msg.payload;\n\n// Handle v1/devices/me/attributes format (shared wrapper from TB server push)\nif (payload && payload.shared) {\n    payload = payload.shared;\n    msg.payload = payload;\n}\n// Handle legacy v1/gateway/attributes format (child device attr notification)\nelse if (payload && payload.device && payload.data) {\n    payload = payload.data;\n    msg.payload = payload;\n    msg.deviceName = payload.device;\n}\n\n// 1. Basic validation\nconst required = [\"config_data\", \"signature\", \"target_version\", \"target\"];\nif (!required.every(k => payload.hasOwnProperty(k))) return null;\n\n// Also ignore empty config_data (initial provisioning default)\nif (!payload.config_data) return null;\n\nconst target = payload.target;\nconst floorPad = String(floor).padStart(2, '0');\n\n// 2. Responsibility Check — each worker handles its own floor only.\nif (target === \"all\") {\n    // Re-target to this floor so each worker covers its 20 rooms independently.\n    // Avoids 10 identical broadcast messages hitting every room.\n    msg.payload = Object.assign({}, payload, { target: `floor_${floorPad}` });\n} else if (target.startsWith(\"floor_\")) {\n    const targetFloor = parseInt(target.split(\"_\")[1], 10);\n    if (floor !== targetFloor) return null;\n} else if (target.startsWith(\"b01-f\")) {\n    const targetFloor = parseInt(target.substring(5, 7), 10);\n    if (floor !== targetFloor) return null;\n} else {\n    return null;\n}\n\nreturn msg;\n",
         "outputs": 1,
         "x": 450,
-        "y": 880,
+        "y": 765,
         "wires": [
             [
                 "d9f53dff88d47c20",
@@ -697,8 +697,8 @@
         "qos": "2",
         "retain": "false",
         "broker": "73b48127bf2649bd",
-        "x": 710,
-        "y": 880,
+        "x": 780,
+        "y": 765,
         "wires": []
     },
     {
@@ -711,8 +711,8 @@
         "datatype": "json",
         "broker": "73b48127bf2649bd",
         "inputs": 0,
-        "x": 190,
-        "y": 980,
+        "x": 160,
+        "y": 909,
         "wires": [
             [
                 "474e5dae73a23400",
@@ -727,8 +727,8 @@
         "name": "Format Version for TB",
         "func": "// msg.payload comes from the engine OTA ack:\n// { deviceName: 'b01-f01-r001', current_version: '2.0' }\nconst p = msg.payload;\nif (!p || !p.deviceName || !p.current_version) return null;\n\n// Track floor-level ack count in flow context for widget progress\nconst countKey = 'ota_acked_' + p.current_version;\nconst count = (flow.get(countKey) || 0) + 1;\nflow.set(countKey, count);\n\n// Output 1: Update child device telemetry via TB gateway protocol\nconst msg1 = Object.assign({}, msg, {\n    topic: 'v1/gateway/telemetry',\n    payload: JSON.stringify({\n        [p.deviceName]: [{\n            ts: Date.now(),\n            values: { current_version: p.current_version }\n        }]\n    })\n});\n\n// Output 2: Publish this floor's cumulative ack count as own device telemetry\nconst msg2 = {\n    payload: JSON.stringify({\n        ota_floor_acked: count,\n        ota_acked_version: p.current_version\n    })\n};\n\nreturn [msg1, msg2];",
         "outputs": 2,
-        "x": 450,
-        "y": 980,
+        "x": 460,
+        "y": 909,
         "wires": [
             [
                 "d545b9bd2ca8e132",
@@ -753,8 +753,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 750,
-        "y": 980,
+        "x": 860,
+        "y": 909,
         "wires": []
     },
     {
@@ -770,8 +770,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1100,
-        "y": 150,
+        "x": 1440,
+        "y": 162,
         "wires": []
     },
     {
@@ -787,8 +787,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 200,
-        "y": 940,
+        "x": 460,
+        "y": 817,
         "wires": []
     },
     {
@@ -804,8 +804,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 460,
-        "y": 940,
+        "x": 790,
+        "y": 817,
         "wires": []
     },
     {
@@ -821,8 +821,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 720,
-        "y": 940,
+        "x": 210,
+        "y": 1105,
         "wires": []
     },
     {
@@ -838,8 +838,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 200,
-        "y": 1040,
+        "x": 470,
+        "y": 961,
         "wires": []
     },
     {
@@ -855,8 +855,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 460,
-        "y": 1040,
+        "x": 810,
+        "y": 961,
         "wires": []
     },
     {
@@ -872,8 +872,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 720,
-        "y": 1040,
+        "x": 500,
+        "y": 1105,
         "wires": []
     },
     {
@@ -890,8 +890,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 710,
-        "y": 1080,
+        "x": 800,
+        "y": 1013,
         "wires": []
     },
     {
@@ -906,8 +906,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 400,
-        "y": 500,
+        "x": 480,
+        "y": 569,
         "wires": [
             [
                 "debug_attr_all"
@@ -925,8 +925,8 @@
         "tostatus": false,
         "complete": "true",
         "targetType": "full",
-        "x": 400,
-        "y": 460,
+        "x": 760,
+        "y": 569,
         "wires": []
     },
     {
@@ -939,8 +939,8 @@
         "datatype": "json",
         "broker": "tb_direct_broker",
         "inputs": 0,
-        "x": 150,
-        "y": 500,
+        "x": 170,
+        "y": 569,
         "wires": [
             [
                 "gw_attr_router",
@@ -959,7 +959,7 @@
         "broker": "tb_direct_broker",
         "inputs": 0,
         "x": 190,
-        "y": 560,
+        "y": 621,
         "wires": [
             [
                 "floor_attr_router",
@@ -979,8 +979,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 450,
-        "y": 560,
+        "x": 490,
+        "y": 621,
         "wires": [
             [
                 "debug_attr_all"
@@ -1000,8 +1000,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 450,
-        "y": 600,
+        "x": 480,
+        "y": 673,
         "wires": []
     },
     {
@@ -1017,8 +1017,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 100,
+        "x": 160,
+        "y": 477,
         "wires": [
             [
                 "debug_catch_all"
@@ -1038,8 +1038,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 600,
-        "y": 160,
+        "x": 480,
+        "y": 477,
         "wires": []
     },
     {
@@ -1059,8 +1059,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 110,
-        "y": 440,
+        "x": 170,
+        "y": 499,
         "wires": [
             [
                 "2a8b8d545ff4cea8"
@@ -1084,8 +1084,8 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 110,
-        "y": 500,
+        "x": 170,
+        "y": 117,
         "wires": [
             [
                 "2e796e0f34b223de"
@@ -1104,8 +1104,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
-        "y": 500,
+        "x": 460,
+        "y": 176,
         "wires": [
             [
                 "000678954e67ad01"
@@ -1125,8 +1125,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 1,
-        "x": 590,
-        "y": 500,
+        "x": 680,
+        "y": 176,
         "wires": [
             [
                 "3fe1c37dd8716439"
@@ -1145,8 +1145,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 880,
-        "y": 640,
+        "x": 900,
+        "y": 176,
         "wires": [
             [
                 "7d1917eef0e5bc0c"
@@ -1168,8 +1168,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 440,
-        "y": 300,
+        "x": 1180,
+        "y": 244,
         "wires": [
             [
                 "4f2f64d86d349a74"
@@ -1188,8 +1188,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
-        "y": 440,
+        "x": 460,
+        "y": 499,
         "wires": [
             []
         ]
@@ -1206,8 +1206,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 950,
-        "y": 480,
+        "x": 1710,
+        "y": 244,
         "wires": [
             [
                 "267dbf7e8e373788",
@@ -1234,8 +1234,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 200,
+        "x": 190,
+        "y": 65,
         "wires": [
             [
                 "rpc_router_id",
@@ -1255,8 +1255,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 440,
-        "y": 200,
+        "x": 460,
+        "y": 117,
         "wires": [
             [
                 "7d1917eef0e5bc0c"
@@ -1280,8 +1280,8 @@
         "correl": "",
         "expiry": "",
         "broker": "75bf69f74513b636",
-        "x": 800,
-        "y": 200,
+        "x": 1180,
+        "y": 176,
         "wires": []
     },
     {
@@ -1297,8 +1297,8 @@
         "content-format": "application/json",
         "raw-buffer": false,
         "name": "CoAP Command PUT",
-        "x": 760,
-        "y": 300,
+        "x": 1460,
+        "y": 176,
         "wires": [
             [
                 "1deb7af5ce18b1e9"
@@ -1317,8 +1317,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 970,
-        "y": 340,
+        "x": 1710,
+        "y": 176,
         "wires": [
             [
                 "267dbf7e8e373788"
@@ -1345,8 +1345,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1290,
-        "y": 500,
+        "x": 1980,
+        "y": 355,
         "wires": []
     },
     {
@@ -1363,8 +1363,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1280,
-        "y": 340,
+        "x": 1960,
+        "y": 303,
         "wires": []
     },
     {
@@ -1380,8 +1380,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1310,
-        "y": 80,
+        "x": 1950,
+        "y": 244,
         "wires": []
     },
     {
@@ -1397,8 +1397,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1310,
-        "y": 760,
+        "x": 1930,
+        "y": 407,
         "wires": []
     },
     {
@@ -1412,8 +1412,8 @@
         "tostatus": false,
         "complete": "true",
         "targetType": "full",
-        "x": 400,
-        "y": 160,
+        "x": 440,
+        "y": 65,
         "wires": []
     },
     {
@@ -1429,8 +1429,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1290,
-        "y": 300,
+        "x": 170,
+        "y": 591,
         "wires": []
     },
     {
@@ -1447,8 +1447,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb_direct_broker",
-        "x": 1350,
-        "y": 600,
+        "x": 430,
+        "y": 591,
         "wires": []
     }
 ]
